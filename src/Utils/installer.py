@@ -32,6 +32,14 @@ def download_from_github(repo_url, destination):
         print_color(f"Error: Failed to download from GitHub - {str(e)}", bcolors.FAIL)
         return False
 
+def add_dependencies():
+    print("│ Installation de lm-sensors", bcolors.HEADER)
+    try:
+        subprocess.call(['sudo', 'apt', 'install', lm-sensors, '-y'])
+        print("│ L'installation de lm-sensors c'est terminier avec succès", bcolors.OKBLUE)
+    except subprocess.CalledProcessError as e:
+        print("│ Une erreur s'est produite lors de l'installation de lm-sensors :", e, bcolors.FAIL)
+
 def install_service():
     # Define GitHub repository URL and destination directory
     repo_url = "https://github.com/jonas52/systek.git"
@@ -66,3 +74,4 @@ def install_service():
 
 if __name__ == "__main__":
     install_service()
+    add_dependencies()

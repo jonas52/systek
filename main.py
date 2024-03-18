@@ -9,11 +9,14 @@ import sys
 from src.Utils.update import check_update
 import subprocess
 import src.Main.systek import clear_screen
+import src.Utils.installer import *
 
 if __name__ == "__main__":
     if len(sys.argv) > 1 and sys.argv[1] == "--update":
         check_update()
         sys.exit(0)
+    elif len(sys.argv) > 1 and sys.argv[1] == "--install":
+        
     else:
         try:
             subprocess.run(['sudo', 'systek'], check=True)
