@@ -8,70 +8,67 @@
 import subprocess
 import os
 import shutil
-import sys
 
-# Color codes for output
-class bcolors:
-    HEADER = '\033[95m'
-    OKBLUE = '\033[94m'
-    OKGREEN = '\033[92m'
-    WARNING = '\033[93m'
-    FAIL = '\033[91m'
-    ENDC = '\033[0m'
-    BOLD = '\033[1m'
-    UNDERLINE = '\033[4m'
+def install_systek():
+    # Color codes for output
+    class bcolors:
+        HEADER = '\033[95m'
+        OKBLUE = '\033[94m'
+        OKGREEN = '\033[92m'
+        WARNING = '\033[93m'
+        FAIL = '\033[91m'
+        ENDC = '\033[0m'
+        BOLD = '\033[1m'
+        UNDERLINE = '\033[4m'
 
-def print_color(msg, color=bcolors.OKBLUE):
-    print(color + msg + bcolors.ENDC)
+    def print_color(msg, color=bcolors.OKBLUE):
+        print(color + msg + bcolors.ENDC)
+    def add_dependencies():
+        print("Installation des dépendances ...", bcolors.OKBLUE)
+        try:
+            with open(os.devnull, 'w') as devnull:
+                subprocess.call(['sudo', 'apt', 'install', 'lm-sensors', '-y'], stdout=devnull, stderr=subprocess.STDOUT)
+            print("Installation of depandence completed.", bcolors.OKGREEN)
+        except subprocess.CalledProcessError as e:
+            print("Une erreur s'est produite lors de l'installation des dépendances :", e, bcolors.FAIL)
 
-def download_from_github(repo_url, destination):
-    try:
-        subprocess.run(["git", "clone", repo_url, destination])
-        return True
-    except Exception as e:
-        print_color(f"Error: Failed to download from GitHub - {str(e)}", bcolors.FAIL)
-        return False
-
-def add_dependencies():
-    print("│ Installation de lm-sensors", bcolors.HEADER)
-    try:
-        subprocess.call(['sudo', 'apt', 'install', lm-sensors, '-y'])
-        print("│ L'installation de lm-sensors c'est terminier avec succès", bcolors.OKBLUE)
-    except subprocess.CalledProcessError as e:
-        print("│ Une erreur s'est produite lors de l'installation de lm-sensors :", e, bcolors.FAIL)
-
-def install_service():
-    # Define GitHub repository URL and destination directory
-    repo_url = "https://github.com/jonas52/systek.git"
-    destination_dir = "/opt/systek"
-
-    print_color("Welcome to the program installation process.", bcolors.HEADER)
-    print_color("This installer will download the program from GitHub and install it on your system.", bcolors.OKBLUE)
-
-    # Check if the destination directory exists
-    if os.path.exists(destination_dir):
-        print_color("Destination directory already exists.", bcolors.WARNING)
-        choice = input("Do you want to reinstall the program? (y/n): ").strip().lower()
-        if choice != 'y':
-            print_color("Installation aborted.", bcolors.FAIL)
+    def download_from_github(repo_url, destination):
+        try:
+            print_color("Downloading from GitHub...", bcolors.OKBLUE)
+            subprocess.run(["git", "clone", repo_url, destination], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            add_dependencies()
+            print_color("Installation completed.", bcolors.OKGREEN)
+            print_color("You can now use the program.", bcolors.OKGREEN)
+            return True
+        except Exception as e:
+            print_color(f"Error: Failed to download from GitHub - {str(e)}", bcolors.FAIL)
             return False
-        else:
-            try:
-                shutil.rmtree(destination_dir)
-            except Exception as e:
-                print_color(f"Error: Failed to remove existing directory - {str(e)}", bcolors.FAIL)
+
+    def install_service():
+        # Define GitHub repository URL and destination directory
+        repo_url = "https://github.com/jonas52/systek.git"
+        destination_dir = "/opt/systek"
+
+        print_color("Welcome to the program installation process.", bcolors.HEADER)
+        print_color("This installer will download the program from GitHub and install it on your system.", bcolors.OKBLUE)
+
+        # Check if the destination directory exists
+        if os.path.exists(destination_dir):
+            print_color("Destination directory already exists.", bcolors.WARNING)
+            choice = input("Do you want to reinstall the program? (y/n): ").strip().lower()
+            if choice != 'y':
+                print_color("Installation aborted.", bcolors.FAIL)
                 return False
+            else:
+                try:
+                    shutil.rmtree(destination_dir)
+                except Exception as e:
+                    print_color(f"Error: Failed to remove existing directory - {str(e)}", bcolors.FAIL)
+                    return False
 
-    # Download the program from GitHub
-    print_color("Downloading from GitHub...", bcolors.OKBLUE)
-    if not download_from_github(repo_url, destination_dir):
-        return False
-
-    # Proceed with installation
-    print_color("Installation completed.", bcolors.OKGREEN)
-    print_color("You can now use the program.", bcolors.OKGREEN)
-    return True
+        # Download the program from GitHub
+        if not download_from_github(repo_url, destination_dir):
+            return False
 
 if __name__ == "__main__":
-    install_service()
-    add_dependencies()
+    install_systek()
