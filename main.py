@@ -22,8 +22,10 @@ def main():
     if args.update:
         check_update()
     elif args.install:
-        install_systek()
+        main_install()
         return
+    else:
+        sys.exit(1)
 
     try:
         subprocess.run(['sudo', 'systek'], check=True)
