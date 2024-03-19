@@ -10,7 +10,7 @@ import argparse
 import subprocess
 import sys
 from src.Utils.update import check_update
-from src.Utils.installer import install_systek
+from src.Utils.installer import main_install
 from src.Main.systek import clear_screen
 
 def main():
