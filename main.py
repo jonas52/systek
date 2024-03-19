@@ -6,19 +6,25 @@
 #│        |___/              petitpierre@duck.com
 #╰──────────────────────────────────────────────────────╼
 #import
-import sys
+import argparse
 import subprocess
+import sys
 from src.Utils.update import check_update
 from src.Utils.installer import install_systek
 from src.Main.systek import clear_screen
 
 def main():
-    if len(sys.argv) > 1:
-        if sys.argv[1] == "--update":
-            check_update()
-        elif sys.argv[1] == "--install":
-            install_systek()
-            return
+    parser = argparse.ArgumentParser(description="Manage your linux server")
+    parser.add_argument("--update", action="store_true", help="Check for updates.")
+    parser.add_argument("--install", action="store_true", help="Install the systek")
+    args = parser.parse_args()
+
+    if args.update:
+        check_update()
+    elif args.install:
+        install_systek()
+        return
+
     try:
         subprocess.run(['sudo', 'systek'], check=True)
     except subprocess.CalledProcessError as e:
