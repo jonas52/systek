@@ -28,6 +28,8 @@ def main():
     args = parser.parse_args()
 
     if args.update:
+        print(":::::::::::::::::::::::::::::::::::::: UPDATE :::::::::::::::::::::::::::::::::::::::::::::")
+        subprocess.call(['sleep', '3'])
         check_update()
         launch_systek()
     elif args.install:
