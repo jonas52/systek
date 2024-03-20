@@ -12,6 +12,14 @@ import sys
 from src.Utils.update import check_update
 from src.Utils.installer import main_install
 from src.Main.systek import clear_screen
+def launch_systek():
+    try:
+        subprocess.run(['sudo', 'systek'], check=True)
+    except subprocess.CalledProcessError as e:
+        clear_screen()
+        print("│ The systek command is not available. Make sure you are running the script on a compatible system. "), e
+        input("╰─╼ Press Enter to continue...")
+        sys.exit(1)
 
 def main():
     parser = argparse.ArgumentParser(description="Manage your linux server")
@@ -21,18 +29,12 @@ def main():
 
     if args.update:
         check_update()
+        launch_systek()
     elif args.install:
         main_install()
+        launch_systek()
         return
     else:
-        sys.exit(1)
-
-    try:
-        subprocess.run(['sudo', 'systek'], check=True)
-    except subprocess.CalledProcessError as e:
-        clear_screen()
-        print("│ The systek command is not available. Make sure you are running the script on a compatible system. "), e
-        input("╰─╼ Press Enter to continue...")
         sys.exit(1)
 
 if __name__ == "__main__":
