@@ -16,7 +16,7 @@ from src.Main.systek import clear_screen
 def main():
     parser = argparse.ArgumentParser(description="Manage your linux server")
     parser.add_argument("--update", action="store_true", help="Check for updates.")
-    parser.add_argument("--install", action="store_true", help="Install the systek")
+    parser.add_argument("--install", action="store_true", nargs='?', help="Install the systek")
     args = parser.parse_args()
 
     if args.update:
