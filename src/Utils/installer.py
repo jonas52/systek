@@ -71,5 +71,21 @@ def main_install():
         if not download_from_github(repo_url, destination_dir):
             return False
 
+        # Add the sys-tek script to the system path
+        sys_tek_script = os.path.join(destination_dir, 'sys-tek')
+        if os.path.exists(sys_tek_script):
+            with open(os.devnull, 'w') as devnull:
+                subprocess.call(['sudo', 'ln', '-s', sys_tek_script, '/usr/local/bin/systek'], stdout=devnull, stderr=subprocess.STDOUT)
+            print_color("Le script sys-tek a été ajouté au chemin du système.", bcolors.OKGREEN)
+        else:
+            print_color("Le script sys-tek n'a pas été trouvé dans le répertoire d'installation.", bcolors.FAIL)
+
+    # Install dependencies
+    add_dependencies()
+
+    # Install the service
+    if install_service():
+        print_color("L'installation s'est déroulée avec succès.", bcolors.OKGREEN)
+
 if __name__ == "__main__":
     main_install()
