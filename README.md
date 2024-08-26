@@ -33,4 +33,4 @@ Make sure you have the following installed:
 📝 License
 This project is licensed under the GNU General Public License v2.0 . See the LICENSE file for more details.
 
-<p align="center"> <strong>Made with ❤️ by jonas52</strong> </p> ```
+<p align="center"> <strong>Made with ❤️ by jonas52</strong> </p>
