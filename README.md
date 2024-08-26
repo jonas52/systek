@@ -1,8 +1,8 @@
+<h1 align="center">Systek Script</h1>
 <p align="center">
-  <img src="![Screenshot 2024-08-26 223145](https://github.com/user-attachments/assets/f723421f-3691-4b17-bf3e-11bf3cc6456d)" alt="Script Preview" width="600">
+  <img src="https://github.com/user-attachments/assets/723bcab7-30a6-47a6-873b-cc3ffc44d226" alt="Script Preview" width="300">
 </p>
 
-<h1 align="center">Systek Script</h1>
 
 <p align="center">
   <strong>A Python script for easily manage your linux servers.</strong>
