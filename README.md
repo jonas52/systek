@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="![image](https://github.com/user-attachments/assets/38b9c30b-4112-4b1b-9483-5c038aa6c146)" alt="Script Preview" width="600">
+  <img src="![Screenshot 2024-08-26 223145](https://github.com/user-attachments/assets/f723421f-3691-4b17-bf3e-11bf3cc6456d)" alt="Script Preview" width="600">
 </p>
 
 <h1 align="center">Systek Script</h1>
@@ -30,3 +30,7 @@ Make sure you have the following installed:
 2. Launch the script
    ```bash
    sudo python3 systek.py
+📝 License
+This project is licensed under the GNU General Public License v2.0 . See the LICENSE file for more details.
+
+<p align="center"> <strong>Made with ❤️ by jonas52</strong> </p> ```
