@@ -20,6 +20,12 @@ import re
 import argparse
 import shutil
 
+SERVICE_NAME = "systek"
+INSTALL_PATH = "/opt/systek"
+BIN_PATH = f"/usr/local/bin/{SERVICE_NAME}"
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+
+
 if os.geteuid() != 0:
     print("╰─╼ This script must be run as superuser (root).")
     sys.exit(1)
@@ -30,8 +36,7 @@ parser.add_argument('--update', action='store_true', help="Update the script fro
 parser.add_argument('--remove', action='store_true', help="Remove the service and script completely")
 args, _ = parser.parse_known_args()
 
-SERVICE_NAME = "systek"
-SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+
 
 if args.update:
     print("│ Updating the script from Git...")
@@ -51,7 +56,6 @@ if args.remove:
     subprocess.run(["sudo", "rm", f"/etc/systemd/system/{SERVICE_NAME}.service"])
     subprocess.run(["sudo", "systemctl", "daemon-reload"])
     subprocess.run(["sudo", "systemctl", "reset-failed"])
-    subprocess.run(["sudo", "rm", "-fr", "/opt/systek"])
     subprocess.run(["sudo", "rm", "-f", f"/usr/local/bin/{SERVICE_NAME}"])
     print(f"│ Deleting folder: {SCRIPT_DIR}")
     shutil.rmtree(SCRIPT_DIR)
