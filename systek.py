@@ -593,7 +593,7 @@ def hold_package():
 def unhold_package():
     clear_screen()
     print("│ Package to include updates")
-    package_a_reinclude = input("│ Package name to include : ")
+    package_a_reinclude = input("��� Package name to include : ")
     try:
         subprocess.call(['sudo', 'apt-mark', 'unhold', package_a_reinclude])
         clear_screen()
