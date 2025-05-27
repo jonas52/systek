@@ -40,7 +40,7 @@ Before using Systek, make sure you have:
 ### 📦 One-liner install
 
 ```bash
-bash <(curl -s https://raw.githubusercontent.com/jonas52/systek/main/install_service.sh)
+sudo bash <(curl -s https://raw.githubusercontent.com/jonas52/systek/main/install_service.sh)
 ```
 
 This command will:
