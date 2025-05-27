@@ -610,7 +610,7 @@ def unhold_package():
 
 def print_menu():
     clear_screen()
-    print('''
+    print(r'''
  ___  _  _  ___  ____  ____  _  _ 
 / __)( \/ )/ __)(_  _)( ___)( )/ )
 \__ \ \  / \__ \  )(   )__)  )  ( 
