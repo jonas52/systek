@@ -40,8 +40,9 @@ args, _ = parser.parse_known_args()
 
 if args.update:
     print("│ Updating the script from Git...")
-    if os.path.isdir(os.path.join(SCRIPT_DIR, ".git")):
-        subprocess.run(["git", "-C", SCRIPT_DIR, "pull", "origin", "main"], check=True)
+    if os.path.isdir(os.path.join(INSTALL_PATH, ".git")):
+        subprocess.run(["git", "-C", INSTALL_PATH, "pull", "origin", "main"], check=True)
+
         print("│ Update complete.")
         print("│ Restarting the service...")
         subprocess.run(["sudo", "systemctl", "restart", SERVICE_NAME], check=True)
