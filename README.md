@@ -37,7 +37,13 @@ Before using Systek, make sure you have:
 
 ## 🚀 Installation
 
-### 📦 One-liner install
+### 📦 One-liner launch
+
+```bash
+bash <(curl -s https://raw.githubusercontent.com/jonas52/systek/main/install_service.sh) | systek
+```
+
+### 📦 One-liner install 
 
 ```bash
 bash <(curl -s https://raw.githubusercontent.com/jonas52/systek/main/install_service.sh)
