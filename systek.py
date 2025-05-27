@@ -16,10 +16,46 @@ import fcntl
 import struct
 import netifaces
 import re
+import argparse
+import shutil
 
 if os.geteuid() != 0:
     print("╰─╼ This script must be run as superuser (root).")
     sys.exit(1)
+
+# Handle command-line arguments like --update and --remove
+parser = argparse.ArgumentParser(description="Systek Command Options")
+parser.add_argument('--update', action='store_true', help="Update the script from Git and restart the service")
+parser.add_argument('--remove', action='store_true', help="Remove the service and script completely")
+args, _ = parser.parse_known_args()
+
+SERVICE_NAME = "systek"
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+
+if args.update:
+    print("│ Updating the script from Git...")
+    if os.path.isdir(os.path.join(SCRIPT_DIR, ".git")):
+        subprocess.run(["git", "-C", SCRIPT_DIR, "pull", "origin", "main"], check=True)
+        print("│ Update complete.")
+        print("│ Restarting the service...")
+        subprocess.run(["sudo", "systemctl", "restart", SERVICE_NAME], check=True)
+    else:
+        print("╰─╼ Not a Git repository. Cannot update.")
+    sys.exit(0)
+
+if args.remove:
+    print("│ Removing service and script...")
+    subprocess.run(["sudo", "systemctl", "stop", SERVICE_NAME])
+    subprocess.run(["sudo", "systemctl", "disable", SERVICE_NAME])
+    subprocess.run(["sudo", "rm", f"/etc/systemd/system/{SERVICE_NAME}.service"])
+    subprocess.run(["sudo", "systemctl", "daemon-reload"])
+    subprocess.run(["sudo", "systemctl", "reset-failed"])
+    subprocess.run(["sudo", "rm", "-f", f"/usr/local/bin/{SERVICE_NAME}"])
+    print(f"│ Deleting folder: {SCRIPT_DIR}")
+    shutil.rmtree(SCRIPT_DIR)
+    print("╰─╼ Removal complete.")
+    sys.exit(0)
+
 
 def clear_screen():
     os.system('clear')
