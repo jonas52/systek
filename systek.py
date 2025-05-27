@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 # installer avant {sudo apt-get install lm-sensors}
 #│  ____              _                       ____ ____  
 #│ | __ ) _   _      | | ___  _ __   __ _ ___| ___|___ \ 
