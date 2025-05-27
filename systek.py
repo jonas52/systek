@@ -41,25 +41,25 @@ args, _ = parser.parse_known_args()
 if args.update:
     print("│ Updating the script from Git...")
     if os.path.isdir(os.path.join(INSTALL_PATH, ".git")):
-        subprocess.run(["git", "-C", INSTALL_PATH, "pull", "origin", "main"], check=True)
+        subprocess.run(["git", "-C", INSTALL_PATH, "pull", "origin", "main"], check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
         print("│ Update complete.")
-        print("│ Restarting the service...")
-        subprocess.run(["sudo", "systemctl", "restart", SERVICE_NAME], check=True)
+        print("╰─╼ Restarting the service...")
+        subprocess.run(["sudo", "systemctl", "restart", SERVICE_NAME], check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     else:
         print("╰─╼ Not a Git repository. Cannot update.")
     sys.exit(0)
 
 if args.remove:
     print("│ Removing service and script...")
-    subprocess.run(["sudo", "systemctl", "stop", SERVICE_NAME])
-    subprocess.run(["sudo", "systemctl", "disable", SERVICE_NAME])
-    subprocess.run(["sudo", "rm", f"/etc/systemd/system/{SERVICE_NAME}.service"])
-    subprocess.run(["sudo", "systemctl", "daemon-reload"])
-    subprocess.run(["sudo", "systemctl", "reset-failed"])
-    subprocess.run(["sudo", "rm", "-f", f"/usr/local/bin/{SERVICE_NAME}"])
+    subprocess.run(["sudo", "systemctl", "stop", SERVICE_NAME], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    subprocess.run(["sudo", "systemctl", "disable", SERVICE_NAME], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    subprocess.run(["sudo", "rm", f"/etc/systemd/system/{SERVICE_NAME}.service"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    subprocess.run(["sudo", "systemctl", "daemon-reload"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    subprocess.run(["sudo", "systemctl", "reset-failed"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    subprocess.run(["sudo", "rm", "-f", f"/usr/local/bin/{SERVICE_NAME}"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     print("│ Deleting folder: /opt/systek")
-    subprocess.run(["sudo", "rm", "-rf", "/opt/systek"])
+    subprocess.run(["sudo", "rm", "-rf", "/opt/systek"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     print("╰─╼ Removal complete.")
     sys.exit(0)
 
