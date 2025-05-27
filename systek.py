@@ -58,7 +58,7 @@ if args.remove:
     subprocess.run(["sudo", "systemctl", "reset-failed"])
     subprocess.run(["sudo", "rm", "-f", f"/usr/local/bin/{SERVICE_NAME}"])
     print("│ Deleting folder: /opt/systek")
-    subprocess.run(["sudo", "rm", "-rf", /opt/systek])
+    subprocess.run(["sudo", "rm", "-rf", "/opt/systek"])
     print("╰─╼ Removal complete.")
     sys.exit(0)
 
