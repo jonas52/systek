@@ -8,7 +8,7 @@ SYMLINK_PATH="/usr/local/bin/systek"
 
 # Clone or update repo
 if [ -d "$INSTALL_DIR/.git" ]; then
-    echo "╰─╼ Updating existing repo..."
+    echo "│ Updating existing repo..."
     git -C "$INSTALL_DIR" pull
 else
     echo "│ Cloning repo to $INSTALL_DIR..."
