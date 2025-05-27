@@ -58,7 +58,7 @@ if args.remove:
     subprocess.run(["sudo", "systemctl", "reset-failed"])
     subprocess.run(["sudo", "rm", "-f", f"/usr/local/bin/{SERVICE_NAME}"])
     print(f"│ Deleting folder: {SCRIPT_DIR}")
-    shutil.rmtree(SCRIPT_DIR)
+    shutil.rmtree(/opt/systek)
     print("╰─╼ Removal complete.")
     sys.exit(0)
 
