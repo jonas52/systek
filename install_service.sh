@@ -1,5 +1,10 @@
 #!/bin/bash
 
+if [ "$EUID" -ne 0 ]; then
+    echo "╰─╼ This script must be run as superuser (root)."
+    exit 1
+fi
+
 REPO_URL="https://github.com/jonas52/systek.git"
 INSTALL_DIR="/opt/systek"
 SERVICE_NAME="systek"
