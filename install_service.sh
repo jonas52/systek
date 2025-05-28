@@ -26,7 +26,7 @@ fi
 # Install git if not present
 if ! command -v git > /dev/null 2>&1; then
     echo "│ Git not found. Installing with $PKG_MANAGER..."
-    eval "sudo $INSTALL_CMD git"
+    eval "sudo $INSTALL_CMD git > /dev/null 2>&1"
     if [ $? -ne 0 ]; then
         echo "╰─╼ Failed to install git. Aborting."
         exit 1
