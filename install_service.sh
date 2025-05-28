@@ -65,8 +65,28 @@ if [ "$PYTHON_OK" != true ]; then
         exit 1
     fi
     ln -sf "$(command -v python3.12)" /usr/bin/python3
-    echo "╰─╼ Python 3.12 installed and set as default python3."
+    echo "│ Python 3.12 installed and set as default python3."
 fi
+
+# Install pip if missing
+if ! command -v pip3 &>/dev/null; then
+    echo "│ pip3 not found. Installing with $PKG_MANAGER..."
+    case $PKG_MANAGER in
+        apt)
+            apt install -y python3-pip > /dev/null 2>&1
+            ;;
+        dnf|yum)
+            $PKG_MANAGER install -y python3-pip > /dev/null 2>&1
+            ;;
+        pacman)
+            pacman -Sy --noconfirm python-pip > /dev/null 2>&1
+            ;;
+    esac
+fi
+
+# Install netifaces module
+echo "│ Installing Python module: netifaces"
+pip3 install netifaces > /dev/null 2>&1
 
 
 REPO_URL="https://github.com/jonas52/systek.git"
