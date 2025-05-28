@@ -33,6 +33,42 @@ if ! command -v git > /dev/null 2>&1; then
     fi
 fi
 
+# Ensure Python ≥ 3.10 is available
+PYTHON_OK=false
+if command -v python3 &>/dev/null; then
+    PYTHON_VERSION=$(python3 -c 'import sys; print(f"{sys.version_info.major}.{sys.version_info.minor}")')
+    VERSION_OK=$(echo "$PYTHON_VERSION >= 3.10" | bc)
+    if [ "$VERSION_OK" -eq 1 ]; then
+        PYTHON_OK=true
+    fi
+fi
+
+if [ "$PYTHON_OK" != true ]; then
+    echo "│ Python >= 3.10 not found. Installing Python 3.12 with $PKG_MANAGER..."
+
+    case $PKG_MANAGER in
+        apt)
+            add-apt-repository ppa:deadsnakes/ppa -y > /dev/null 2>&1
+            apt update -y > /dev/null 2>&1
+            apt install -y python3.12 > /dev/null 2>&1
+            ;;
+        dnf|yum)
+            $PKG_MANAGER install -y python3.12 > /dev/null 2>&1
+            ;;
+        pacman)
+            pacman -Sy --noconfirm python312 > /dev/null 2>&1
+            ;;
+    esac
+
+    if ! command -v python3.12 &>/dev/null; then
+        echo "╰─╼ Python 3.12 installation failed."
+        exit 1
+    fi
+    ln -sf "$(command -v python3.12)" /usr/bin/python3
+    echo "╰─╼ Python 3.12 installed and set as default python3."
+fi
+
+
 REPO_URL="https://github.com/jonas52/systek.git"
 INSTALL_DIR="/opt/systek"
 SERVICE_NAME="systek"
