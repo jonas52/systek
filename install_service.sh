@@ -6,29 +6,29 @@ if [ "$EUID" -ne 0 ]; then
 fi
 
 # Detect package manager
-if command -v apt &>/dev/null; then
+if command -v apt > /dev/null 2>&1 ; then
     PKG_MANAGER="apt"
     INSTALL_CMD="apt update && apt install -y"
-elif command -v dnf &>/dev/null; then
+elif command -v dnf > /dev/null 2>&1 ; then
     PKG_MANAGER="dnf"
     INSTALL_CMD="dnf install -y"
-elif command -v yum &>/dev/null; then
+elif command -v yum > /dev/null 2>&1 ; then
     PKG_MANAGER="yum"
     INSTALL_CMD="yum install -y"
-elif command -v pacman &>/dev/null; then
+elif command -v pacman > /dev/null 2>&1 ; then
     PKG_MANAGER="pacman"
     INSTALL_CMD="pacman -Sy --noconfirm"
 else
-    echo "❌ Unsupported package manager. Install Git manually and rerun the script."
+    echo "╰─╼ Unsupported package manager. Install Git manually and rerun the script."
     exit 1
 fi
 
 # Install git if not present
-if ! command -v git &>/dev/null; then
+if ! command -v git > /dev/null 2>&1; then
     echo "│ Git not found. Installing with $PKG_MANAGER..."
     eval "sudo $INSTALL_CMD git"
     if [ $? -ne 0 ]; then
-        echo "❌ Failed to install git. Aborting."
+        echo "╰─╼ Failed to install git. Aborting."
         exit 1
     fi
 fi
