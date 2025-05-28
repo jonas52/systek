@@ -25,6 +25,9 @@ INSTALL_PATH = "/opt/systek"
 BIN_PATH = f"/usr/local/bin/{SERVICE_NAME}"
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 
+if sys.version_info < (3, 10):
+    print("╰─╼ This script requires Python 3.10 or later for match-case. Please upgrade your Python version")
+    sys.exit(1)
 
 if os.geteuid() != 0:
     print("╰─╼ This script must be run as superuser (root).")
