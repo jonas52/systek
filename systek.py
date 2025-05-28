@@ -143,20 +143,33 @@ def update_system():
     clear_screen()
     print("│ System update ")
 
-    try:
-        subprocess.run(['apt-get', 'update'], check=True)
-        subprocess.run(['apt-get', 'upgrade', '-y'], check=True)
-        clear_screen()
-        print("│ System update successfully completed")
-        input("╰─╼ Press Enter to continue...")
-    except subprocess.CalledProcessError as e:
-        clear_screen()
-        print("│ An error occurred while updating the system :"), e
-        input("╰─╼ Press Enter to continue...")
-    except FileNotFoundError:
-        clear_screen()
-        print("│ The 'apt-get' command is not available. Make sure you are running the script on a compatible system.")
-        input("╰─╼ Press Enter to continue...")
+    package_managers = {
+        'apt-get': [['apt-get', 'update'], ['apt-get', 'upgrade', '-y']],
+        'dnf': [['dnf', 'upgrade', '--refresh', '-y']],
+        'yum': [['yum', 'update', '-y']],
+        'pacman': [['pacman', '-Syu', '--noconfirm']],
+        'zypper': [['zypper', 'refresh'], ['zypper', 'update', '-y']],
+        'apk': [['apk', 'update'], ['apk', 'upgrade']]
+    }
+
+    for pm, commands in package_managers.items():
+        if shutil.which(pm):
+            try:
+                for cmd in commands:
+                    subprocess.run(cmd, check=True)
+                clear_screen()
+                print(f"│ System update successfully completed with {pm}")
+                input("╰─╼ Press Enter to continue...")
+                return
+            except subprocess.CalledProcessError as e:
+                clear_screen()
+                print(f"│ An error occurred while updating the system with {pm}: {e}")
+                input("╰─╼ Press Enter to continue...")
+                return
+
+    clear_screen()
+    print("│ No supported package manager found on this system.")
+    input("╰─╼ Press Enter to continue...")
 
 def enable_service():
     clear_screen()
