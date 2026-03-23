@@ -104,7 +104,7 @@ class SystekApp(App):
             with Horizontal(id="center-row"):
                 with Vertical(id="actions-column", classes="panel"):
                     yield Label("Actions", classes="panel-title")
-                    items = [ListItem(Label(f"{action.number:>2}. {action.label}")) for action in ACTIONS]
+                    items = [ListItem(Label(f"{action.number:>2}. [{action.category}] {action.label}")) for action in ACTIONS]
                     yield ListView(*items, id="action-list")
                 with Vertical(id="detail-column", classes="panel"):
                     yield Label("Détail", classes="panel-title")
@@ -121,7 +121,7 @@ class SystekApp(App):
         self.set_interval(2.0, self.refresh_dashboard)
         self.query_one("#action-list", ListView).index = 0
         self.refresh_dashboard()
-        self.show_action_details(1)
+        self.show_action_details(ACTIONS[0].number)
         self.set_status("Prêt. Tape un numéro puis Entrée, ou sélectionne une action et appuie sur Entrée.")
 
     def action_refresh_dashboard(self) -> None:
@@ -251,11 +251,11 @@ class SystekApp(App):
             )
             self.set_status(f"Action {number} bloquée: sudo requis.")
             return
-        result = self.run_action(number, args)
+        result = self.execute_action(number, args)
         self.query_one("#output-panel", Static).update(result)
         self.set_status(f"Action {number} exécutée.")
 
-    def run_action(self, number: int, args: list[str]) -> str:
+    def execute_action(self, number: int, args: list[str]) -> str:
         try:
             match number:
                 case 1:
