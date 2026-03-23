@@ -1,204 +1,241 @@
 from __future__ import annotations
 
-from collections import defaultdict
-
-from rich.text import Text
-from textual import on
 from textual.app import App, ComposeResult
-from textual.containers import Container, Horizontal, Vertical
-from textual.reactive import reactive
-from textual.widgets import Footer, Header, Input, Label, ListItem, ListView, Static
+from textual.binding import Binding
+from textual.containers import Container, Horizontal, Vertical, Grid
+from textual.widgets import Footer, Header, Input, Label, ListItem, ListView, RichLog, Static
 
-from .actions import ACTIONS
-from .models import Action
-from .ops import dashboard_snapshot, execute_action, host_snapshot
 from .permissions import is_root
+from .version import __version__
+from .core.actions import ACTIONS_BY_CODE, CATEGORIES, action_lines_for_category, execute_action, parse_command
+from .core.monitor import (
+    cpu_percent,
+    cpu_temperature,
+    disk_percent,
+    hostname,
+    human_bytes,
+    load_average,
+    local_ips,
+    network_rates,
+    ram_percent,
+    uptime_human,
+)
+from .core.system import current_user, detect_package_manager, kernel_version, os_pretty_name
 
 
-class MetricPanel(Static):
-    data = reactive({}, recompose=False)
-
-    def render(self) -> Text:
-        snap = dashboard_snapshot()
-        t = Text()
-        t.append(" Monitor\n", style="bold #7dd3fc")
-        t.append(" CPU   ", style="bold")
-        t.append(bar(snap["cpu"]), style=color_from_percent(snap["cpu"]))
-        t.append(f" {snap['cpu']}\n", style="bold")
-        t.append(" RAM   ", style="bold")
-        t.append(bar(snap["ram"]), style=color_from_percent(snap["ram"]))
-        t.append(f" {snap['ram']}\n", style="bold")
-        t.append(" DISK  ", style="bold")
-        t.append(bar(snap["disk"]), style=color_from_percent(snap["disk"]))
-        t.append(f" {snap['disk']}\n", style="bold")
-        t.append(f" LOAD  {snap['load']}\n", style="#e5e7eb")
-        t.append(f" NET   {snap['net']}\n", style="#e5e7eb")
-        t.append(f" UP    {snap['uptime']}", style="#e5e7eb")
-        return t
+class MetricCard(Static):
+    def update_metric(self, title: str, value: str, percent: float | None = None, accent: str = "green") -> None:
+        bar = ""
+        if percent is not None:
+            fill = max(0, min(20, int(percent / 5)))
+            empty = 20 - fill
+            bar_color = "green" if percent < 60 else "yellow" if percent < 85 else "red"
+            bar = f"\n[{bar_color}]{'█' * fill}[/]{'·' * empty}"
+        self.update(f"[b]{title}[/b]\n[{accent}]{value}[/]{bar}")
 
 
-class HostPanel(Static):
-    def render(self) -> Text:
-        snap = host_snapshot()
-        t = Text()
-        t.append(" Host\n", style="bold #86efac")
-        for key in ("hostname", "user", "os", "kernel", "ip", "pkg", "mode", "version"):
-            label = key.upper().ljust(9)
-            value = snap[key]
-            style = "#fca5a5" if key == "mode" and snap[key] != "admin" else "#e5e7eb"
-            t.append(label, style="bold")
-            t.append(f" {value}\n", style=style)
-        return t
+class CategoryItem(ListItem):
+    def __init__(self, category: str) -> None:
+        super().__init__(Label(category))
+        self.category = category
 
 
-class ActionList(ListView):
-    def __init__(self, actions: list[Action]) -> None:
-        self.actions = actions
-        items: list[ListItem] = []
-        grouped: dict[str, list[Action]] = defaultdict(list)
-        for action in actions:
-            grouped[action.category].append(action)
-        for category, entries in grouped.items():
-            items.append(ListItem(Label(f"[{category}]", classes="category-label"), classes="category-item", disabled=True))
-            for index, action in enumerate(entries, start=1):
-                label = Label(action.label)
-                label.tooltip = action.description
-                item = ListItem(label)
-                item.action_ref = action  # type: ignore[attr-defined]
-                items.append(item)
-        super().__init__(*items, id="action-list")
-
-
-class DetailPanel(Static):
-    def show_action(self, action: Action) -> None:
-        text = (
-            f"[b]{action.label}[/b]\n\n"
-            f"Catégorie : {action.category}\n"
-            f"Privilège requis : {'sudo/root' if action.requires_root else 'lecture seule'}\n\n"
-            f"{action.description}\n"
-        )
-        if action.prompt:
-            text += f"\nArgument attendu : {action.prompt}"
-        if action.example:
-            text += f"\nExemple : {action.example}"
-        self.update(text)
-
-
-class OutputPanel(Static):
-    def show_message(self, title: str, body: str, ok: bool = True) -> None:
-        status = "OK" if ok else "ERREUR"
-        color = "#86efac" if ok else "#fca5a5"
-        self.update(f"[b {color}]{status}[/b {color}] [b]{title}[/b]\n\n{body}")
+class ActionItem(ListItem):
+    def __init__(self, code: int, text: str) -> None:
+        super().__init__(Label(text))
+        self.code = code
 
 
 class SystekApp(App):
     CSS_PATH = "../../assets/systek.tcss"
     TITLE = "Systek"
-    SUB_TITLE = "Linux admin console"
+    SUB_TITLE = "Linux Admin Console"
     BINDINGS = [
-        ("q", "quit", "Quitter"),
-        ("r", "refresh_ui", "Rafraîchir"),
-        ("enter", "launch_selected", "Exécuter"),
-        ("slash", "focus_command", "Commande"),
+        Binding("q", "quit", "Quitter"),
+        Binding("r", "refresh_dashboard", "Rafraîchir"),
+        Binding("tab", "focus_next", "Champ suivant", show=False),
+        Binding("shift+tab", "focus_previous", "Champ précédent", show=False),
     ]
 
     def __init__(self) -> None:
         super().__init__()
-        self.selectable_actions = [a for a in ACTIONS]
+        self.current_category = CATEGORIES[0]
 
     def compose(self) -> ComposeResult:
         yield Header(show_clock=True)
-        with Container(id="root"):
-            with Horizontal(id="top"):
-                yield MetricPanel(id="metrics")
-                yield HostPanel(id="host")
-            with Horizontal(id="middle"):
-                yield ActionList(self.selectable_actions)
-                with Vertical(id="right-stack"):
-                    yield DetailPanel("Sélectionne une action à gauche.", id="details")
-                    yield OutputPanel("Résultats en attente.", id="output")
-            with Horizontal(id="command-bar"):
-                mode = "admin" if is_root() else "limité"
-                note = "mode complet" if is_root() else "mode lecture/consultation, relance avec sudo systek"
-                yield Static(f"[b]Mode[/b] : {mode}  •  {note}", id="statusline")
-                yield Input(placeholder="Entrez l'argument requis puis Entrée. Exemple: nginx ou 22/tcp", id="command")
+        with Vertical(id="app-shell"):
+            with Grid(id="monitor-grid"):
+                yield MetricCard(id="cpu-card")
+                yield MetricCard(id="ram-card")
+                yield MetricCard(id="disk-card")
+                yield MetricCard(id="net-card")
+                yield MetricCard(id="load-card")
+                yield MetricCard(id="temp-card")
+
+            with Horizontal(id="top-info"):
+                yield Static(id="host-panel")
+                yield Static(id="mode-panel")
+
+            with Horizontal(id="workspace"):
+                with Vertical(classes="column narrow"):
+                    yield Label("Sections", classes="panel-title")
+                    yield ListView(*[CategoryItem(cat) for cat in CATEGORIES], id="category-list")
+                with Vertical(classes="column medium"):
+                    yield Label("Actions", classes="panel-title")
+                    yield ListView(id="action-list")
+                with Vertical(classes="column wide"):
+                    yield Label("Détails", classes="panel-title")
+                    yield Static(id="detail-panel")
+                    yield Label("Résultat", classes="panel-title")
+                    yield RichLog(id="result-log", wrap=True, markup=True, highlight=True)
+
+            with Container(id="command-bar"):
+                yield Input(placeholder="Commande rapide : ex 14 | 6 nginx | 25 22/tcp", id="command-input")
         yield Footer()
 
     def on_mount(self) -> None:
-        self.set_interval(2, self._refresh_panels)
-        self._refresh_panels()
-        self.call_after_refresh(self._focus_list)
+        self._refresh_dashboard()
+        self.refresh_category_actions(self.current_category)
+        category_list = self.query_one("#category-list", ListView)
+        category_list.index = 0
+        self.query_one("#command-input", Input).focus()
+        self.set_interval(2.0, self._refresh_dashboard)
 
-    def _focus_list(self) -> None:
-        self.query_one(ActionList).focus()
-        self._sync_current_selection()
+    def action_refresh_dashboard(self) -> None:
+        self._refresh_dashboard()
+        self.notify("Dashboard rafraîchi")
 
-    def _refresh_panels(self) -> None:
-        self.query_one(MetricPanel).refresh()
-        self.query_one(HostPanel).refresh()
+    def _refresh_dashboard(self) -> None:
+        cpu = cpu_percent()
+        ram = ram_percent()
+        disk = disk_percent("/")
+        rx, tx = network_rates(0.08)
+        l1, l5, l15 = load_average()
+        self.query_one("#cpu-card", MetricCard).update_metric("CPU", f"{cpu:.1f}%", cpu)
+        self.query_one("#ram-card", MetricCard).update_metric("RAM", f"{ram:.1f}%", ram, "cyan")
+        self.query_one("#disk-card", MetricCard).update_metric("DISK /", f"{disk:.1f}%", disk, "magenta")
+        self.query_one("#net-card", MetricCard).update_metric("NET", f"RX {human_bytes(rx)}\nTX {human_bytes(tx)}", None, "blue")
+        self.query_one("#load-card", MetricCard).update_metric("LOAD", f"{l1:.2f} / {l5:.2f} / {l15:.2f}\nUptime {uptime_human()}", None, "yellow")
+        self.query_one("#temp-card", MetricCard).update_metric("TEMP", cpu_temperature(), None, "red")
 
-    def action_refresh_ui(self) -> None:
-        self._refresh_panels()
-        self._sync_current_selection()
+        ips = ", ".join(local_ips()) or "N/A"
+        self.query_one("#host-panel", Static).update(
+            "\n".join([
+                "[b]Système[/b]",
+                f"Host      : {hostname()}",
+                f"OS        : {os_pretty_name()}",
+                f"Kernel    : {kernel_version()}",
+                f"IP        : {ips}",
+                f"User      : {current_user()}",
+                f"Pkg mgr   : {detect_package_manager()}",
+                f"Version   : {__version__}",
+            ])
+        )
+        mode = "ADMIN" if is_root() else "LIMITÉ"
+        color = "green" if is_root() else "yellow"
+        self.query_one("#mode-panel", Static).update(
+            "\n".join([
+                "[b]Mode[/b]",
+                f"[{color}]{mode}[/]",
+                "",
+                "Sans sudo : consultation et diagnostic.",
+                "Avec sudo : administration complète.",
+                "",
+                "Commande rapide en bas.",
+                "Entrée exécute la commande saisie.",
+                "r = refresh, q = quitter",
+            ])
+        )
 
-    def action_focus_command(self) -> None:
-        self.query_one("#command", Input).focus()
+    def refresh_category_actions(self, category: str) -> None:
+        self.current_category = category
+        action_list = self.query_one("#action-list", ListView)
+        action_list.clear()
+        lines = action_lines_for_category(category)
+        for line in lines:
+            code = int(line.split(".")[0])
+            action_list.append(ActionItem(code, line))
+        if lines:
+            action_list.index = 0
+            first_code = int(lines[0].split(".")[0])
+            self.show_action_details(first_code)
 
-    def action_launch_selected(self) -> None:
-        self._execute_current()
+    def show_action_details(self, code: int) -> None:
+        action = ACTIONS_BY_CODE.get(code)
+        if not action:
+            return
+        root_text = "Oui" if action.requires_root else "Non"
+        hint = action.usage or f"{code}"
+        example = action.example or hint
+        self.query_one("#detail-panel", Static).update(
+            "\n".join([
+                f"[b]{action.code}. {action.label}[/b]",
+                "",
+                action.description,
+                "",
+                f"Section           : {action.category}",
+                f"Sudo requis       : {root_text}",
+                f"Commande rapide   : {hint}",
+                f"Exemple           : {example}",
+            ])
+        )
 
-    @on(ListView.Highlighted)
-    def on_list_highlighted(self, event: ListView.Highlighted) -> None:
-        self._sync_current_selection()
-
-    @on(Input.Submitted, "#command")
-    def on_command_submitted(self, event: Input.Submitted) -> None:
-        self._execute_current()
-        event.input.value = ""
-        self.query_one(ActionList).focus()
-
-    def _current_action(self) -> Action | None:
-        lv = self.query_one(ActionList)
-        item = lv.highlighted_child
+    def on_list_view_selected(self, event: ListView.Selected) -> None:
+        item = event.item
         if item is None:
-            return None
-        return getattr(item, "action_ref", None)
-
-    def _sync_current_selection(self) -> None:
-        action = self._current_action()
-        details = self.query_one(DetailPanel)
-        if action is None:
-            details.update("Sélectionne une action disponible.")
             return
-        details.show_action(action)
-
-    def _execute_current(self) -> None:
-        action = self._current_action()
-        if action is None:
-            self.query_one(OutputPanel).show_message("Aucune action", "Aucune action exécutable n'est sélectionnée.", False)
+        if event.list_view.id == "category-list" and isinstance(item, CategoryItem):
+            self.refresh_category_actions(item.category)
             return
-        raw_args = self.query_one("#command", Input).value
-        result = execute_action(action.key, raw_args)
-        self.query_one(OutputPanel).show_message(result.title, result.body, result.ok)
+        if event.list_view.id == "action-list" and isinstance(item, ActionItem):
+            self.show_action_details(item.code)
+            action = ACTIONS_BY_CODE[item.code]
+            if action.usage and "<" in action.usage:
+                self.query_one("#command-input", Input).value = action.example or action.usage
+                self.notify("Complète ou valide la commande en bas")
+            else:
+                self.execute_from_text(str(item.code))
+
+    def on_list_view_highlighted(self, event: ListView.Highlighted) -> None:
+        item = event.item
+        if event.list_view.id == "action-list" and isinstance(item, ActionItem):
+            self.show_action_details(item.code)
+
+    def on_input_submitted(self, event: Input.Submitted) -> None:
+        if event.input.id != "command-input":
+            return
+        raw = event.value.strip()
+        if not raw:
+            return
+        self.execute_from_text(raw)
+        event.input.value = ""
+
+    def execute_from_text(self, raw: str) -> None:
+        log = self.query_one("#result-log", RichLog)
+        code, args = parse_command(raw)
+        if code is None:
+            self.notify("Commande invalide")
+            return
+        action = ACTIONS_BY_CODE.get(code)
+        if not action:
+            self.notify(f"Action inconnue: {code}")
+            return
+        try:
+            result = execute_action(code, args)
+        except Exception as exc:
+            log.write(f"[bold red]Erreur[/] {exc}")
+            log.write("─" * 80)
+            return
+        status = "OK" if result.ok else "ERROR"
+        color = "green" if result.ok else "red"
+        log.write(f"[bold {color}]{status}[/] [{action.code}] {action.label}")
+        if result.command:
+            log.write(f"[dim]$ {result.command}[/]")
+        payload = result.stdout or result.stderr or "Aucune sortie"
+        for line in payload.splitlines()[:400]:
+            log.write(line)
+        log.write("─" * 80)
 
 
-def percent_from_text(value: str) -> int:
-    try:
-        return int(float(value.replace("%", "").strip()))
-    except Exception:
-        return 0
-
-
-def color_from_percent(value: str) -> str:
-    pct = percent_from_text(value)
-    if pct < 60:
-        return "#86efac"
-    if pct < 85:
-        return "#fde68a"
-    return "#fca5a5"
-
-
-def bar(value: str, width: int = 18) -> str:
-    pct = max(0, min(100, percent_from_text(value)))
-    filled = int((pct / 100) * width)
-    return "█" * filled + "░" * (width - filled)
+def main() -> None:
+    SystekApp().run()

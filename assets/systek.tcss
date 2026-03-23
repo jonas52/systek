@@ -1,94 +1,117 @@
 Screen {
     background: #0b1220;
-    color: #e5e7eb;
+    color: #d7dde8;
 }
 
-#root {
-    layout: vertical;
-    padding: 0 1;
+Header {
+    background: #111827;
+    color: #d7dde8;
 }
 
-#top {
+Footer {
+    background: #111827;
+    color: #9fb0c8;
+}
+
+#app-shell {
+    padding: 1 1;
+}
+
+#monitor-grid {
     height: 11;
+    grid-size: 6;
+    grid-gutter: 1 1;
+    grid-columns: 1fr 1fr 1fr 1fr 1fr 1fr;
+    margin-bottom: 1;
 }
 
-#middle {
+MetricCard {
+    border: round #243042;
+    background: #111827;
+    padding: 1 2;
+    content-align: left top;
+}
+
+#top-info {
+    height: 10;
+    margin-bottom: 1;
+}
+
+#host-panel, #mode-panel {
+    width: 1fr;
+    border: round #243042;
+    background: #111827;
+    padding: 1 2;
+    margin-right: 1;
+}
+
+#workspace {
     height: 1fr;
 }
 
-#command-bar {
-    height: 3;
-    margin: 0 0 1 0;
+.column {
+    border: round #243042;
+    background: #111827;
+    padding: 1;
+    margin-right: 1;
 }
 
-#metrics, #host, #action-list, #details, #output, #statusline, #command {
-    border: round #22324d;
-    background: #101826;
-    color: #e5e7eb;
+.column.narrow {
+    width: 26;
 }
 
-#metrics, #host {
-    padding: 1 2;
-    margin: 0 1 1 1;
+.column.medium {
+    width: 38;
 }
 
-#metrics {
-    width: 2fr;
-}
-
-#host {
+.column.wide {
     width: 1fr;
 }
 
-#action-list {
-    width: 34;
-    margin: 0 1 1 1;
+.panel-title {
+    color: #8db2ff;
+    text-style: bold;
+    margin-bottom: 1;
 }
 
-#right-stack {
-    width: 1fr;
+#category-list, #action-list {
     height: 1fr;
-}
-
-#details, #output {
-    margin: 0 1 1 1;
-    padding: 1 2;
-}
-
-#details {
-    height: 12;
-}
-
-#output {
-    height: 1fr;
-    overflow: auto;
-}
-
-#statusline {
-    width: 1fr;
-    padding: 1 2;
-    margin: 0 1 0 1;
-}
-
-#command {
-    width: 45%;
-    margin: 0 1 0 0;
+    border: none;
+    background: transparent;
 }
 
 ListView > ListItem {
     padding: 0 1;
+    color: #d7dde8;
 }
 
 ListView > ListItem.--highlight {
-    background: #1d4ed8 25%;
+    background: #1d4ed8 20%;
     color: #ffffff;
-}
-
-.category-item {
-    background: #0f172a;
-    color: #93c5fd;
-}
-
-.category-label {
     text-style: bold;
+}
+
+#detail-panel {
+    height: 12;
+    border: round #1f2937;
+    background: #0f172a;
+    padding: 1 2;
+    margin-bottom: 1;
+}
+
+#result-log {
+    height: 1fr;
+    border: round #1f2937;
+    background: #0f172a;
+}
+
+#command-bar {
+    height: 3;
+    margin-top: 1;
+}
+
+#command-input {
+    border: round #243042;
+    background: #111827;
+    color: #d7dde8;
 }

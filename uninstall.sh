@@ -7,7 +7,7 @@ if [[ "${EUID}" -ne 0 ]]; then
 fi
 
 read -r -p "Supprimer Systek ? [y/N] " CONFIRM
-if [[ ! "$CONFIRM" =~ ^([yY]|yes|YES)$ ]]; then
+if [[ ! "$CONFIRM" =~ ^([yY][eE][sS]|[yY])$ ]]; then
   echo "Annulé."
   exit 0
 fi
@@ -16,8 +16,8 @@ rm -f /usr/local/bin/systek
 rm -rf /opt/systek
 
 read -r -p "Supprimer aussi /etc/systek /var/log/systek /var/lib/systek ? [y/N] " PURGE
-if [[ "$PURGE" =~ ^([yY]|yes|YES)$ ]]; then
+if [[ "$PURGE" =~ ^([yY][eE][sS]|[yY])$ ]]; then
   rm -rf /etc/systek /var/log/systek /var/lib/systek
 fi
 
-echo "Systek a été désinstallé."
+echo "Systek désinstallé."

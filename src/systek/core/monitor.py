@@ -7,7 +7,7 @@ import psutil
 
 
 def cpu_percent() -> float:
-    return psutil.cpu_percent(interval=0.1)
+    return psutil.cpu_percent(interval=0.0)
 
 
 def ram_percent() -> float:
@@ -34,32 +34,50 @@ def uptime_human() -> str:
     return f"{hours}h {minutes}m"
 
 
-def net_summary() -> tuple[str, str]:
-    counters = psutil.net_io_counters()
-    rx = counters.bytes_recv / 1024 / 1024
-    tx = counters.bytes_sent / 1024 / 1024
-    return (f"{rx:.1f} MB", f"{tx:.1f} MB")
+def hostname() -> str:
+    return socket.gethostname()
 
 
 def local_ips() -> list[str]:
     ips: list[str] = []
-    for _, addrs in psutil.net_if_addrs().items():
+    for _name, addrs in psutil.net_if_addrs().items():
         for addr in addrs:
-            if addr.family == socket.AF_INET and not addr.address.startswith("127."):
+            if getattr(addr, "family", None) == socket.AF_INET and not addr.address.startswith("127."):
                 ips.append(addr.address)
     return ips
 
 
-def cpu_temperature() -> float | None:
+def network_rates(interval: float = 0.15) -> tuple[float, float]:
+    c1 = psutil.net_io_counters()
+    time.sleep(interval)
+    c2 = psutil.net_io_counters()
+    if c1 is None or c2 is None:
+        return 0.0, 0.0
+    rx = max(0.0, (c2.bytes_recv - c1.bytes_recv) / interval)
+    tx = max(0.0, (c2.bytes_sent - c1.bytes_sent) / interval)
+    return rx, tx
+
+
+def human_bytes(num: float) -> str:
+    units = ["B/s", "KB/s", "MB/s", "GB/s"]
+    value = float(num)
+    for unit in units:
+        if value < 1024 or unit == units[-1]:
+            return f"{value:.1f} {unit}"
+        value /= 1024
+    return f"{value:.1f} GB/s"
+
+
+def cpu_temperature() -> str:
     try:
         temps = psutil.sensors_temperatures()
+        if not temps:
+            return "N/A"
+        for _label, entries in temps.items():
+            for entry in entries:
+                current = getattr(entry, "current", None)
+                if current is not None:
+                    return f"{current:.1f}°C"
     except Exception:
-        return None
-    if not temps:
-        return None
-    for entries in temps.values():
-        for entry in entries:
-            current = getattr(entry, "current", None)
-            if current is not None:
-                return float(current)
-    return None
+        pass
+    return "N/A"

@@ -1,27 +1,18 @@
-# Systek V2.5
+# Systek
 
-TUI d'administration Linux simple, professionnelle et orientée admin système.
+Systek is a Linux system administration TUI.
 
-## Installation
+## Install
 
 ```bash
 sudo ./install.sh
 ```
 
-## Lancement
+## Usage
 
 ```bash
 systek
 sudo systek
 ```
 
-Sans sudo, certaines fonctionnalités restent en lecture seule.
-
-## Commandes utiles
-
-```bash
-systek --version
-systek --doctor
-sudo systek --update
-sudo systek --uninstall
-```
+Without sudo, Systek starts in limited mode.

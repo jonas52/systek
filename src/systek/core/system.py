@@ -1,49 +1,33 @@
 from __future__ import annotations
 
-import platform
-import socket
 from pathlib import Path
-from ..permissions import require_root
-from ..shell import run_command
+import platform
+import getpass
 
 
-def get_hostname() -> str:
-    return socket.gethostname()
-
-
-def get_kernel() -> str:
-    return platform.release()
-
-
-def get_os_name() -> str:
-    path = Path("/etc/os-release")
-    if path.exists():
-        values = {}
-        for line in path.read_text(encoding="utf-8").splitlines():
+def os_pretty_name() -> str:
+    os_release = Path("/etc/os-release")
+    if os_release.exists():
+        values: dict[str, str] = {}
+        for line in os_release.read_text(encoding="utf-8", errors="ignore").splitlines():
             if "=" in line:
-                key, val = line.split("=", 1)
-                values[key] = val.strip('"')
+                k, v = line.split("=", 1)
+                values[k] = v.strip().strip('"')
         return values.get("PRETTY_NAME", "Linux")
     return "Linux"
 
 
-def update_system(pkg_manager: str):
-    require_root()
-    mapping = {
-        "apt": (["apt", "update"], ["apt", "upgrade", "-y"]),
-        "dnf": (["dnf", "makecache"], ["dnf", "upgrade", "-y"]),
-        "yum": (["yum", "makecache"], ["yum", "update", "-y"]),
-        "pacman": (["pacman", "-Sy"], ["pacman", "-Su", "--noconfirm"]),
-    }
-    prepare, upgrade = mapping[pkg_manager]
-    return run_command(prepare, timeout=120), run_command(upgrade, timeout=180)
+def kernel_version() -> str:
+    return platform.release()
 
 
-def reboot_system():
-    require_root()
-    return run_command(["reboot"])
+def current_user() -> str:
+    return getpass.getuser()
 
 
-def shutdown_system():
-    require_root()
-    return run_command(["poweroff"])
+def detect_package_manager() -> str:
+    for candidate in ("apt", "dnf", "yum", "pacman", "zypper", "apk"):
+        from shutil import which
+        if which(candidate):
+            return candidate
+    return "unknown"
