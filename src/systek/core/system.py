@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import platform
 import socket
 from pathlib import Path
@@ -14,34 +16,27 @@ def get_kernel() -> str:
 
 
 def get_os_name() -> str:
-    os_release = Path("/etc/os-release")
-    if os_release.exists():
-        data = {}
-        for line in os_release.read_text(encoding="utf-8").splitlines():
+    path = Path("/etc/os-release")
+    if path.exists():
+        values = {}
+        for line in path.read_text(encoding="utf-8").splitlines():
             if "=" in line:
-                k, v = line.split("=", 1)
-                data[k] = v.strip('"')
-        return data.get("PRETTY_NAME", "Linux")
+                key, val = line.split("=", 1)
+                values[key] = val.strip('"')
+        return values.get("PRETTY_NAME", "Linux")
     return "Linux"
 
 
 def update_system(pkg_manager: str):
     require_root()
-    refresh = {
-        "apt": ["apt", "update"],
-        "dnf": ["dnf", "makecache"],
-        "yum": ["yum", "makecache"],
-        "pacman": ["pacman", "-Sy"],
+    mapping = {
+        "apt": (["apt", "update"], ["apt", "upgrade", "-y"]),
+        "dnf": (["dnf", "makecache"], ["dnf", "upgrade", "-y"]),
+        "yum": (["yum", "makecache"], ["yum", "update", "-y"]),
+        "pacman": (["pacman", "-Sy"], ["pacman", "-Su", "--noconfirm"]),
     }
-    upgrade = {
-        "apt": ["apt", "upgrade", "-y"],
-        "dnf": ["dnf", "upgrade", "-y"],
-        "yum": ["yum", "update", "-y"],
-        "pacman": ["pacman", "-Su", "--noconfirm"],
-    }
-    r1 = run_command(refresh[pkg_manager])
-    r2 = run_command(upgrade[pkg_manager])
-    return r1, r2
+    prepare, upgrade = mapping[pkg_manager]
+    return run_command(prepare, timeout=120), run_command(upgrade, timeout=180)
 
 
 def reboot_system():

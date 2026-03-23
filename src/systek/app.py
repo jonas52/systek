@@ -1,501 +1,418 @@
 from __future__ import annotations
 
+from typing import Dict, List, Tuple
+
+from rich.text import Text
+from textual import events
 from textual.app import App, ComposeResult
-from textual.containers import Horizontal, Vertical
+from textual.binding import Binding
+from textual.containers import Container, Horizontal, Vertical
+from textual.reactive import reactive
 from textual.widgets import Footer, Header, Input, Label, ListItem, ListView, Static
 
-from .models import ActionSpec
+from .core import cockpit, disks, firewall, logs, monitor, network, packages, services, system, updater
+from .models import ActionDefinition
 from .permissions import is_root
-from .core.packages import (
-    detect_package_manager,
-    hold_package,
-    install_package,
-    remove_package,
-    search_package,
-    unhold_package,
-)
-from .core.services import (
-    disable_service,
-    enable_service,
-    list_services,
-    restart_service,
-    service_logs,
-    service_status,
-    start_service,
-    stop_service,
-)
-from .core.monitor import (
-    cpu_percent,
-    cpu_temperature,
-    disk_percent,
-    load_average,
-    network_counters,
-    ram_percent,
-    uptime_seconds,
-)
-from .core.system import get_hostname, get_kernel, get_os_name, reboot_system, shutdown_system, update_system
-from .core.network import connectivity_test, get_local_ips, list_interfaces, network_connections
-from .core.disks import disk_usage_report, list_disks, mount_disk
-from .core.firewall import add_rule, delete_rule, disable_ufw, enable_ufw, ufw_status
-from .core.logs import export_system_logs, system_logs
-from .core.cockpit import install_cockpit
 from .version import __version__
 
-ACTIONS: list[ActionSpec] = [
-    ActionSpec(1, "Mettre à jour le système", "Système", "Met à jour les paquets système.", True),
-    ActionSpec(2, "Redémarrer le serveur", "Système", "Redémarrage immédiat.", True),
-    ActionSpec(3, "Éteindre le serveur", "Système", "Arrêt immédiat.", True),
-    ActionSpec(4, "Installer un paquet", "Paquets", "Installe un paquet via le gestionnaire détecté.", True, "nom_du_paquet"),
-    ActionSpec(5, "Supprimer un paquet", "Paquets", "Supprime un paquet.", True, "nom_du_paquet"),
-    ActionSpec(6, "Exclure un paquet des mises à jour", "Paquets", "apt-mark hold.", True, "nom_du_paquet"),
-    ActionSpec(7, "Réinclure un paquet", "Paquets", "apt-mark unhold.", True, "nom_du_paquet"),
-    ActionSpec(8, "Rechercher un paquet", "Paquets", "Recherche un paquet.", False, "mot_cle"),
-    ActionSpec(9, "Redémarrer un service", "Services", "Redémarre un service systemd.", True, "nom_du_service"),
-    ActionSpec(10, "Démarrer un service", "Services", "Démarre un service systemd.", True, "nom_du_service"),
-    ActionSpec(11, "Arrêter un service", "Services", "Arrête un service systemd.", True, "nom_du_service"),
-    ActionSpec(12, "Activer un service", "Services", "Active un service au boot.", True, "nom_du_service"),
-    ActionSpec(13, "Désactiver un service", "Services", "Désactive un service au boot.", True, "nom_du_service"),
-    ActionSpec(14, "Lister les services", "Services", "Liste les services systemd.", False),
-    ActionSpec(15, "Surveiller un service", "Services", "Affiche le statut d’un service.", False, "nom_du_service"),
-    ActionSpec(16, "Logs d’un service", "Services", "Affiche les derniers logs d’un service.", False, "nom_du_service"),
-    ActionSpec(17, "Vue globale des ressources", "Surveillance", "Résumé CPU/RAM/DISK/TEMP.", False),
-    ActionSpec(18, "Vérifier l’espace disque", "Surveillance", "Occupation des partitions.", False),
-    ActionSpec(19, "Vérifier les connexions réseau", "Surveillance", "Sockets réseau via ss.", False),
-    ActionSpec(20, "Vérifier IP / hostname", "Surveillance", "Affiche le hostname et les IP locales.", False),
-    ActionSpec(21, "Vérifier l’usage RAM", "Surveillance", "Affiche l’usage mémoire.", False),
-    ActionSpec(22, "Vérifier l’usage CPU", "Surveillance", "Affiche la charge CPU.", False),
-    ActionSpec(23, "Vérifier la température CPU", "Surveillance", "Affiche la température CPU si disponible.", False),
-    ActionSpec(24, "Monter un disque", "Disques", "Monte un périphérique sur un point de montage.", True, "device point_de_montage"),
-    ActionSpec(25, "Lister les disques connectés", "Disques", "Affiche lsblk.", False),
-    ActionSpec(26, "Afficher les interfaces réseau", "Réseau", "Liste les interfaces détectées.", False),
-    ActionSpec(27, "Tester la connectivité", "Réseau", "Ping 1.1.1.1.", False),
-    ActionSpec(28, "Afficher le statut UFW", "Pare-feu", "Affiche le statut UFW.", False),
-    ActionSpec(29, "Activer le firewall", "Pare-feu", "Active UFW.", True),
-    ActionSpec(30, "Désactiver le firewall", "Pare-feu", "Désactive UFW.", True),
-    ActionSpec(31, "Ajouter une règle", "Pare-feu", "Ajoute une règle UFW.", True, "regle ex: 22/tcp"),
-    ActionSpec(32, "Supprimer une règle", "Pare-feu", "Supprime une règle UFW par numéro.", True, "numero_de_regle"),
-    ActionSpec(33, "Installer Cockpit", "Outils", "Installe Cockpit.", True),
-    ActionSpec(34, "Diagnostic système", "Outils", "Affiche un résumé de diagnostic.", False),
-    ActionSpec(35, "Voir les logs système", "Logs", "Affiche les derniers logs système.", False),
-    ActionSpec(36, "Exporter les logs", "Logs", "Exporte les logs dans /tmp/systek_logs.txt.", False),
-    ActionSpec(37, "Voir les logs d’un service", "Logs", "Alias de l’action 16.", False, "nom_du_service"),
-    ActionSpec(38, "Mettre à jour Systek", "Systek", "Affiche la commande d’update.", True),
-    ActionSpec(39, "Désinstaller Systek", "Systek", "Affiche la commande de désinstallation.", True),
-    ActionSpec(40, "Afficher la version", "Systek", "Affiche la version installée.", False),
+
+ACTIONS: List[ActionDefinition] = [
+    ActionDefinition(1, "Système", "Mettre à jour le système", "Met à jour les dépôts et paquets système.", True),
+    ActionDefinition(2, "Système", "Redémarrer le serveur", "Redémarre immédiatement la machine.", True),
+    ActionDefinition(3, "Système", "Éteindre le serveur", "Éteint immédiatement la machine.", True),
+    ActionDefinition(4, "Paquets", "Installer un paquet", "Installe un paquet via le gestionnaire détecté.", True, "<package>"),
+    ActionDefinition(5, "Paquets", "Supprimer un paquet", "Supprime un paquet.", True, "<package>"),
+    ActionDefinition(6, "Paquets", "Exclure un paquet des mises à jour", "Ajoute un hold sur le paquet.", True, "<package>"),
+    ActionDefinition(7, "Paquets", "Réinclure un paquet", "Retire le hold du paquet.", True, "<package>"),
+    ActionDefinition(8, "Paquets", "Rechercher un paquet", "Recherche un paquet dans les dépôts.", False, "<package>"),
+    ActionDefinition(9, "Services", "Redémarrer un service", "Redémarre un service systemd.", True, "<service>"),
+    ActionDefinition(10, "Services", "Démarrer un service", "Démarre un service systemd.", True, "<service>"),
+    ActionDefinition(11, "Services", "Arrêter un service", "Arrête un service systemd.", True, "<service>"),
+    ActionDefinition(12, "Services", "Activer un service", "Active un service au démarrage.", True, "<service>"),
+    ActionDefinition(13, "Services", "Désactiver un service", "Désactive un service au démarrage.", True, "<service>"),
+    ActionDefinition(14, "Services", "Lister les services", "Affiche les services systemd.", False),
+    ActionDefinition(15, "Services", "Surveiller un service", "Affiche le status systemctl d'un service.", False, "<service>"),
+    ActionDefinition(16, "Services", "Logs d’un service", "Affiche les derniers logs journalctl du service.", False, "<service>"),
+    ActionDefinition(17, "Surveillance", "Vue globale des ressources", "Affiche CPU, RAM, Disk, load, uptime, température.", False),
+    ActionDefinition(18, "Surveillance", "Vérifier l’espace disque", "Affiche l'occupation des points de montage.", False),
+    ActionDefinition(19, "Surveillance", "Vérifier les connexions réseau", "Affiche les connexions TCP/UDP.", False),
+    ActionDefinition(20, "Surveillance", "Vérifier IP / hostname", "Affiche le hostname et les IP locales.", False),
+    ActionDefinition(21, "Surveillance", "Vérifier l’usage RAM", "Affiche l'utilisation mémoire.", False),
+    ActionDefinition(22, "Surveillance", "Vérifier l’usage CPU", "Affiche l'utilisation CPU.", False),
+    ActionDefinition(23, "Surveillance", "Vérifier la température CPU", "Affiche la température CPU si disponible.", False),
+    ActionDefinition(24, "Disques", "Monter un disque", "Monte un périphérique sur un point de montage.", True, "<device> <mountpoint>"),
+    ActionDefinition(25, "Disques", "Lister les disques connectés", "Affiche les périphériques bloc.", False),
+    ActionDefinition(26, "Réseau", "Afficher les interfaces réseau", "Affiche les interfaces détectées.", False),
+    ActionDefinition(27, "Réseau", "Tester la connectivité", "Ping 1.1.1.1 pour un test simple.", False),
+    ActionDefinition(28, "Pare-feu", "Afficher le statut UFW", "Affiche les règles UFW.", False),
+    ActionDefinition(29, "Pare-feu", "Activer le firewall", "Active UFW. Attention à la session SSH.", True),
+    ActionDefinition(30, "Pare-feu", "Désactiver le firewall", "Désactive UFW.", True),
+    ActionDefinition(31, "Pare-feu", "Ajouter une règle", "Ajoute une règle UFW allow.", True, "<règle>"),
+    ActionDefinition(32, "Pare-feu", "Supprimer une règle", "Supprime une règle UFW par numéro.", True, "<numéro>"),
+    ActionDefinition(33, "Outils", "Installer Cockpit", "Installe Cockpit et affiche les URLs possibles.", True),
+    ActionDefinition(34, "Outils", "Diagnostic système", "Affiche les informations générales et le mode d'exécution.", False),
+    ActionDefinition(35, "Systek", "Mettre à jour Systek", "Met à jour l'installation locale de Systek.", True),
+    ActionDefinition(36, "Systek", "Désinstaller Systek", "Indique la commande de désinstallation.", True),
+    ActionDefinition(37, "Systek", "Afficher la version", "Affiche la version de l'application.", False),
+    ActionDefinition(38, "Systek", "Quitter", "Ferme l'application.", False),
 ]
 
-ACTION_MAP = {action.number: action for action in ACTIONS}
-CATEGORIES: list[str] = []
-for action in ACTIONS:
-    if action.category not in CATEGORIES:
-        CATEGORIES.append(action.category)
+
+class MetricBox(Static):
+    value = reactive("--")
+    subtitle = reactive("")
+
+    def __init__(self, title: str, metric_id: str) -> None:
+        super().__init__(id=metric_id, classes="metric-box")
+        self.title = title
+
+    def watch_value(self, value: str) -> None:
+        self.update(Text.from_markup(f"[b]{self.title}[/b]\n{value}\n{self.subtitle}"))
+
+    def watch_subtitle(self, subtitle: str) -> None:
+        self.update(Text.from_markup(f"[b]{self.title}[/b]\n{self.value}\n{subtitle}"))
 
 
 class SystekApp(App):
     CSS_PATH = "../../assets/systek.tcss"
-    TITLE = "Systek"
-    SUB_TITLE = "Console d'administration Linux"
     BINDINGS = [
-        ("q", "quit", "Quitter"),
-        ("r", "refresh_dashboard", "Rafraîchir"),
-        ("tab", "cycle_focus", "Focus"),
-        ("enter", "submit_current", "Exécuter"),
+        Binding("q", "quit", "Quitter"),
+        Binding("r", "refresh_dashboard", "Rafraîchir"),
+        Binding("/", "focus_command", "Commande"),
+        Binding("enter", "run_selected", "Exécuter"),
+        Binding("tab", "cycle_focus", "Changer focus"),
     ]
 
-    def __init__(self, readonly: bool = False):
+    selected_category = reactive("Système")
+
+    def __init__(self) -> None:
         super().__init__()
-        self.readonly = readonly
-        self.root_mode = is_root() and not readonly
-        self.pkg_manager = detect_package_manager()
-        self.current_category = CATEGORIES[0]
-        self.visible_actions: list[ActionSpec] = []
+        self.root_mode = is_root()
+        self.pkg_manager = packages.detect_package_manager()
+        self.categories = list(dict.fromkeys(a.category for a in ACTIONS))
+        self.category_actions: Dict[str, List[ActionDefinition]] = {
+            category: [a for a in ACTIONS if a.category == category] for category in self.categories
+        }
+        self.action_lookup = {a.number: a for a in ACTIONS}
 
     def compose(self) -> ComposeResult:
         yield Header(show_clock=True)
-        with Vertical(id="screen"):
-            with Horizontal(id="topbar"):
-                yield Static(id="monitor-panel", classes="panel")
-                yield Static(id="host-panel", classes="panel")
-            with Horizontal(id="workspace"):
-                with Vertical(id="sidebar", classes="panel"):
-                    yield Label("Sections", classes="section-title")
-                    yield ListView(*(ListItem(Label(cat)) for cat in CATEGORIES), id="category-list")
-                    yield Static(id="mode-panel")
-                with Vertical(id="action-pane", classes="panel"):
-                    yield Label("Opérations", classes="section-title")
-                    yield Static(id="action-header")
+        with Vertical(id="app-root"):
+            with Horizontal(id="metrics-row"):
+                yield MetricBox("CPU", "m-cpu")
+                yield MetricBox("RAM", "m-ram")
+                yield MetricBox("DISK /", "m-disk")
+                yield MetricBox("NET", "m-net")
+                yield MetricBox("LOAD", "m-load")
+                yield MetricBox("UPTIME", "m-uptime")
+            with Horizontal(id="main-row"):
+                with Container(id="sidebar"):
+                    yield Label("Catégories", classes="section-title")
+                    yield ListView(*[ListItem(Label(cat)) for cat in self.categories], id="category-list")
+                with Container(id="center-pane"):
+                    yield Label("Actions", classes="section-title")
                     yield ListView(id="action-list")
-                with Vertical(id="detail-pane"):
-                    with Vertical(classes="panel", id="detail-box"):
-                        yield Label("Détail", classes="section-title")
-                        yield Static(id="detail-panel")
-                    with Vertical(classes="panel", id="output-box"):
-                        yield Label("Sortie", classes="section-title")
-                        yield Static(id="output-panel")
-            with Horizontal(id="commandbar", classes="panel"):
-                yield Static(id="command-help")
-                yield Input(placeholder="Commande rapide : 20 | 9 nginx | 31 22/tcp", id="command-input")
+                with Container(id="right-pane"):
+                    yield Static(id="host-panel", classes="box-panel")
+                    yield Static(id="detail-panel", classes="box-panel")
+                    yield Static(id="result-panel", classes="box-panel")
+            with Horizontal(id="command-row"):
+                yield Input(placeholder="Commande rapide: ex 9 nginx | 4 htop | 31 22/tcp", id="command-input")
         yield Footer()
 
     def on_mount(self) -> None:
-        self.set_interval(2.0, self.refresh_dashboard)
+        self.title = "Systek"
+        self.sub_title = "Linux Admin TUI"
         self.refresh_dashboard()
-        self.query_one("#category-list", ListView).index = 0
-        self._refresh_actions()
-        self._update_mode_panel()
-        self._set_command_help("Entrée exécute l’action sélectionnée. Tab change de panneau. r rafraîchit.")
-        self.query_one("#category-list", ListView).focus()
-
-    def action_refresh_dashboard(self) -> None:
-        self.refresh_dashboard()
-        self._set_command_help("Données système rafraîchies.")
+        category_list = self.query_one("#category-list", ListView)
+        category_list.index = 0
+        self.load_actions_for_category(self.categories[0])
+        self.update_host_panel()
+        self.update_detail_panel(self.category_actions[self.categories[0]][0])
+        self.query_one("#result-panel", Static).update("[b]Résultat[/b]\nPrêt.")
 
     def action_cycle_focus(self) -> None:
-        order = [
+        current = self.focused
+        widgets = [
             self.query_one("#category-list", ListView),
             self.query_one("#action-list", ListView),
             self.query_one("#command-input", Input),
         ]
-        current = self.focused
-        if current in order:
-            idx = order.index(current)
-            order[(idx + 1) % len(order)].focus()
-        else:
-            order[0].focus()
+        if current not in widgets:
+            widgets[0].focus()
+            return
+        idx = widgets.index(current)
+        widgets[(idx + 1) % len(widgets)].focus()
 
-    def action_submit_current(self) -> None:
-        focused = self.focused
-        if isinstance(focused, Input):
-            self.execute_command_string(focused.value)
-            focused.value = ""
+    def action_focus_command(self) -> None:
+        self.query_one("#command-input", Input).focus()
+
+    def action_refresh_dashboard(self) -> None:
+        self.refresh_dashboard()
+        self.update_host_panel()
+
+    def action_run_selected(self) -> None:
+        if isinstance(self.focused, Input):
+            self.execute_command_bar(self.focused.value)
             return
-        if focused is self.query_one("#category-list", ListView):
-            self.query_one("#action-list", ListView).focus()
-            return
-        self._run_selected_action()
+        action_list = self.query_one("#action-list", ListView)
+        action = self.get_selected_action(action_list)
+        if action:
+            self.run_selected_action(action, [])
+
+    def on_list_view_selected(self, event: ListView.Selected) -> None:
+        if event.list_view.id == "category-list":
+            cat = self.extract_label(event.item)
+            self.selected_category = cat
+            self.load_actions_for_category(cat)
+            first_action = self.category_actions[cat][0]
+            self.update_detail_panel(first_action)
+        elif event.list_view.id == "action-list":
+            action = self.get_selected_action(event.list_view)
+            if action:
+                self.update_detail_panel(action)
 
     def on_input_submitted(self, event: Input.Submitted) -> None:
-        self.execute_command_string(event.value)
-        event.input.value = ""
+        if event.input.id == "command-input":
+            self.execute_command_bar(event.value)
+            event.input.value = ""
 
-    def on_list_view_highlighted(self, event: ListView.Highlighted) -> None:
-        if event.list_view.id == "category-list":
-            index = event.list_view.index or 0
-            self.current_category = CATEGORIES[index]
-            self._refresh_actions()
-        elif event.list_view.id == "action-list":
-            action = self._selected_action()
+    def on_key(self, event: events.Key) -> None:
+        if self.focused and self.focused.id in {"category-list", "action-list"}:
+            if event.key in {"up", "down"}:
+                # let ListView handle movement, then refresh detail after a tiny delay via call_after_refresh
+                self.call_after_refresh(self._sync_detail_from_focus)
+
+    def _sync_detail_from_focus(self) -> None:
+        if self.focused and self.focused.id == "action-list":
+            action = self.get_selected_action(self.focused)
             if action:
-                self._show_action_details(action)
+                self.update_detail_panel(action)
+
+    def extract_label(self, item: ListItem) -> str:
+        label = item.query_one(Label)
+        return str(label.renderable)
+
+    def get_selected_action(self, action_list: ListView) -> ActionDefinition | None:
+        if action_list.index is None:
+            return None
+        actions = self.category_actions[self.selected_category]
+        if 0 <= action_list.index < len(actions):
+            return actions[action_list.index]
+        return None
+
+    def load_actions_for_category(self, category: str) -> None:
+        action_list = self.query_one("#action-list", ListView)
+        action_list.clear()
+        for action in self.category_actions[category]:
+            suffix = " [sudo]" if action.requires_root else ""
+            label = f"{action.number:>2}. {action.label}{suffix}"
+            action_list.append(ListItem(Label(label)))
+        action_list.index = 0
+        action_list.focus()
 
     def refresh_dashboard(self) -> None:
-        self.query_one("#monitor-panel", Static).update(self._render_monitor())
-        self.query_one("#host-panel", Static).update(self._render_host_info())
+        cpu = monitor.cpu_percent()
+        ram = monitor.ram_percent()
+        disk_pct = monitor.disk_percent("/")
+        rx, tx = monitor.net_summary()
+        la = monitor.load_average()
+        temp = monitor.cpu_temperature()
 
-    def _refresh_actions(self) -> None:
-        self.visible_actions = [a for a in ACTIONS if a.category == self.current_category]
-        list_view = self.query_one("#action-list", ListView)
-        list_view.clear()
-        for action in self.visible_actions:
-            lock = "[sudo]" if action.requires_root else "[read]"
-            text = f"{action.number:>2}  {action.label}  {lock}"
-            list_view.append(ListItem(Label(text)))
-        if self.visible_actions:
-            list_view.index = 0
-            self._show_action_details(self.visible_actions[0])
-        self.query_one("#action-header", Static).update(
-            f"[b]{self.current_category}[/b]  •  {len(self.visible_actions)} action(s)"
-        )
+        self.query_one("#m-cpu", MetricBox).value = self.progress_bar(cpu, "%")
+        self.query_one("#m-cpu", MetricBox).subtitle = f"Temp: {temp:.1f}°C" if temp is not None else "Temp: N/A"
+        self.query_one("#m-ram", MetricBox).value = self.progress_bar(ram, "%")
+        self.query_one("#m-ram", MetricBox).subtitle = "Mémoire"
+        self.query_one("#m-disk", MetricBox).value = self.progress_bar(disk_pct, "%")
+        self.query_one("#m-disk", MetricBox).subtitle = "Occupation"
+        self.query_one("#m-net", MetricBox).value = f"RX {rx}\nTX {tx}"
+        self.query_one("#m-net", MetricBox).subtitle = "Trafic total"
+        self.query_one("#m-load", MetricBox).value = f"{la[0]:.2f} {la[1]:.2f} {la[2]:.2f}"
+        self.query_one("#m-load", MetricBox).subtitle = "1 / 5 / 15 min"
+        self.query_one("#m-uptime", MetricBox).value = monitor.uptime_human()
+        self.query_one("#m-uptime", MetricBox).subtitle = "Depuis boot"
 
-    def _selected_action(self) -> ActionSpec | None:
-        list_view = self.query_one("#action-list", ListView)
-        index = list_view.index or 0
-        if not self.visible_actions:
-            return None
-        return self.visible_actions[index]
+    def progress_bar(self, value: float, suffix: str) -> str:
+        filled = max(0, min(20, int(round(value / 5))))
+        empty = 20 - filled
+        style = "green" if value < 60 else "yellow" if value < 85 else "red"
+        return f"[{style}]{'█' * filled}[/]{'░' * empty}\n{value:>5.1f}{suffix}"
 
-    def _run_selected_action(self) -> None:
-        action = self._selected_action()
-        if not action:
-            self._set_command_help("Aucune action sélectionnée.")
-            return
-        command_input = self.query_one("#command-input", Input)
-        raw = command_input.value.strip()
-        payload = raw if raw and raw.split()[0].isdigit() else f"{action.number}" + (f" {raw}" if raw else "")
-        self.execute_command_string(payload)
-        command_input.value = ""
-
-    def _show_action_details(self, action: ActionSpec) -> None:
-        root = "oui" if action.requires_root else "non"
-        hint = action.arg_hint or "aucun"
-        mode = "admin" if action.requires_root else "lecture"
-        block = (
-            f"[b]{action.number}. {action.label}[/b]\n\n"
-            f"Section      : {action.category}\n"
-            f"Mode         : {mode}\n"
-            f"sudo requis  : {root}\n"
-            f"Argument     : {hint}\n\n"
-            f"{action.description}"
-        )
-        if action.arg_hint:
-            block += f"\n\nExemple : [cyan]{action.number} {action.arg_hint}[/cyan]"
-        if action.requires_root and not self.root_mode:
-            block += "\n\n[yellow]Disponible seulement avec sudo systek[/yellow]"
-        self.query_one("#detail-panel", Static).update(block)
-
-    def _update_mode_panel(self) -> None:
-        if self.root_mode:
-            text = (
-                "[b]Mode[/b]\n"
-                "[green]Administration complète[/green]\n"
-                "Actions système autorisées"
-            )
-        else:
-            text = (
-                "[b]Mode[/b]\n"
-                "[yellow]Lecture limitée[/yellow]\n"
-                "Relancer avec sudo systek"
-            )
-        self.query_one("#mode-panel", Static).update(text)
-
-    def _set_command_help(self, text: str) -> None:
-        self.query_one("#command-help", Static).update(text)
-
-    def _render_monitor(self) -> str:
-        cpu = cpu_percent()
-        ram = ram_percent()
-        disk = disk_percent("/")
-        load1, load5, load15 = load_average()
-        net = network_counters()
-        temp = cpu_temperature()
-        temp_text = f"{temp:.1f}°C" if temp is not None else "N/A"
-        return (
-            "[b]Vue système[/b]\n"
-            f"CPU    {self._bar(cpu)} {cpu:5.1f}%\n"
-            f"RAM    {self._bar(ram)} {ram:5.1f}%\n"
-            f"ROOT   {self._bar(disk)} {disk:5.1f}%\n"
-            f"LOAD   {load1:.2f} / {load5:.2f} / {load15:.2f}\n"
-            f"NET    RX {net.bytes_recv // (1024 * 1024)} MB   TX {net.bytes_sent // (1024 * 1024)} MB\n"
-            f"TEMP   {temp_text}\n"
-            f"UP     {self._fmt_uptime(uptime_seconds())}"
-        )
-
-    def _render_host_info(self) -> str:
-        ips = ", ".join(get_local_ips()) or "N/A"
-        mode = "complet" if self.root_mode else "limité"
-        mode_color = "green" if self.root_mode else "yellow"
-        return (
-            "[b]Hôte[/b]\n"
-            f"Hostname   {get_hostname()}\n"
-            f"OS         {get_os_name()}\n"
-            f"Kernel     {get_kernel()}\n"
-            f"IP         {ips}\n"
-            f"Pkg mgr    {self.pkg_manager}\n"
-            f"Mode       [{mode_color}]{mode}[/]\n"
-            f"Version    {__version__}"
-        )
-
-    def _fmt_uptime(self, seconds: float) -> str:
-        s = int(seconds)
-        days, s = divmod(s, 86400)
-        hours, s = divmod(s, 3600)
-        minutes, _ = divmod(s, 60)
-        if days:
-            return f"{days}j {hours}h {minutes}m"
-        if hours:
-            return f"{hours}h {minutes}m"
-        return f"{minutes}m"
-
-    def _bar(self, percent: float, width: int = 18) -> str:
-        filled = max(0, min(width, int((percent / 100) * width)))
-        empty = width - filled
-        color = "green"
-        if percent >= 80:
-            color = "red"
-        elif percent >= 60:
-            color = "yellow"
-        return f"[{color}]" + ("█" * filled) + f"[/][grey35]" + ("─" * empty) + "[/]"
-
-    def execute_command_string(self, text: str) -> None:
-        raw = text.strip()
-        if not raw:
-            self._set_command_help("Commande vide.")
-            return
-        parts = raw.split()
-        if not parts[0].isdigit():
-            self._set_command_help("Commande invalide. Exemple: 20 ou 9 nginx")
-            return
-        number = int(parts[0])
-        action = ACTION_MAP.get(number)
-        if action is None:
-            self._set_command_help(f"Action inconnue : {number}")
-            return
-        self.current_category = action.category
-        self.query_one("#category-list", ListView).index = CATEGORIES.index(action.category)
-        self._refresh_actions()
-        self._show_action_details(action)
-        args = parts[1:]
-        if action.requires_root and not self.root_mode:
-            self.query_one("#output-panel", Static).update(
-                "[yellow]Action non disponible dans ce mode.[/]\n\nRelancer avec [b]sudo systek[/b]."
-            )
-            self._set_command_help(f"Action {number} bloquée : sudo requis.")
-            return
-        result = self._execute_action(number, args)
-        self.query_one("#output-panel", Static).update(result)
-        self._set_command_help(f"Action {number} exécutée.")
-
-    def _execute_action(self, number: int, args: list[str]) -> str:
-        try:
-            match number:
-                case 1:
-                    r1, r2 = update_system(self.pkg_manager)
-                    return self._format_results("Update système", [r1, r2])
-                case 2:
-                    return self._format_results("Redémarrage", [reboot_system()])
-                case 3:
-                    return self._format_results("Arrêt", [shutdown_system()])
-                case 4:
-                    self._need_args(args, 1, "Exemple: 4 htop")
-                    return self._format_results("Installation paquet", [install_package(self.pkg_manager, args[0])])
-                case 5:
-                    self._need_args(args, 1, "Exemple: 5 htop")
-                    return self._format_results("Suppression paquet", [remove_package(self.pkg_manager, args[0])])
-                case 6:
-                    self._need_args(args, 1, "Exemple: 6 docker-ce")
-                    return self._format_results("Hold paquet", [hold_package(self.pkg_manager, args[0])])
-                case 7:
-                    self._need_args(args, 1, "Exemple: 7 docker-ce")
-                    return self._format_results("Unhold paquet", [unhold_package(self.pkg_manager, args[0])])
-                case 8:
-                    self._need_args(args, 1, "Exemple: 8 nginx")
-                    return self._format_results("Recherche paquet", [search_package(self.pkg_manager, args[0])])
-                case 9:
-                    self._need_args(args, 1, "Exemple: 9 nginx")
-                    return self._format_results("Restart service", [restart_service(args[0])])
-                case 10:
-                    self._need_args(args, 1, "Exemple: 10 nginx")
-                    return self._format_results("Start service", [start_service(args[0])])
-                case 11:
-                    self._need_args(args, 1, "Exemple: 11 nginx")
-                    return self._format_results("Stop service", [stop_service(args[0])])
-                case 12:
-                    self._need_args(args, 1, "Exemple: 12 nginx")
-                    return self._format_results("Enable service", [enable_service(args[0])])
-                case 13:
-                    self._need_args(args, 1, "Exemple: 13 nginx")
-                    return self._format_results("Disable service", [disable_service(args[0])])
-                case 14:
-                    return self._format_results("Liste services", [list_services()])
-                case 15:
-                    self._need_args(args, 1, "Exemple: 15 nginx")
-                    return self._format_results("Statut service", [service_status(args[0])])
-                case 16 | 37:
-                    self._need_args(args, 1, "Exemple: 16 nginx")
-                    return self._format_results("Logs service", [service_logs(args[0])])
-                case 17:
-                    temp = cpu_temperature()
-                    temp_text = f"{temp:.1f}°C" if temp is not None else "N/A"
-                    return (
-                        "[b]Vue globale[/b]\n\n"
-                        f"CPU   : {cpu_percent():.1f}%\n"
-                        f"RAM   : {ram_percent():.1f}%\n"
-                        f"ROOT  : {disk_percent('/'): .1f}%\n"
-                        f"TEMP  : {temp_text}\n"
-                        f"IP    : {', '.join(get_local_ips()) or 'N/A'}"
-                    )
-                case 18:
-                    return f"[b]Espace disque[/b]\n\n{disk_usage_report()}"
-                case 19:
-                    return self._format_results("Connexions réseau", [network_connections()])
-                case 20:
-                    return (
-                        "[b]IP / hostname[/b]\n\n"
-                        f"Hostname : {get_hostname()}\n"
-                        f"IP       : {', '.join(get_local_ips()) or 'N/A'}"
-                    )
-                case 21:
-                    return f"[b]RAM[/b]\n\nUtilisation mémoire : {ram_percent():.1f}%"
-                case 22:
-                    return f"[b]CPU[/b]\n\nUtilisation CPU : {cpu_percent():.1f}%"
-                case 23:
-                    temp = cpu_temperature()
-                    return f"[b]Température CPU[/b]\n\n{temp:.1f}°C" if temp is not None else "[b]Température CPU[/b]\n\nNon disponible."
-                case 24:
-                    self._need_args(args, 2, "Exemple: 24 /dev/sdb1 /mnt/data")
-                    return self._format_results("Montage disque", [mount_disk(args[0], args[1])])
-                case 25:
-                    return self._format_results("Disques", [list_disks()])
-                case 26:
-                    return "[b]Interfaces réseau[/b]\n\n" + "\n".join(list_interfaces())
-                case 27:
-                    return self._format_results("Test connectivité", [connectivity_test()])
-                case 28:
-                    return self._format_results("Statut UFW", [ufw_status()])
-                case 29:
-                    return self._format_results("Activation UFW", [enable_ufw()])
-                case 30:
-                    return self._format_results("Désactivation UFW", [disable_ufw()])
-                case 31:
-                    self._need_args(args, 1, "Exemple: 31 22/tcp")
-                    return self._format_results("Ajout règle UFW", [add_rule(" ".join(args))])
-                case 32:
-                    self._need_args(args, 1, "Exemple: 32 1")
-                    return self._format_results("Suppression règle UFW", [delete_rule(args[0])])
-                case 33:
-                    result, ips = install_cockpit(self.pkg_manager)
-                    text = self._format_results("Installation Cockpit", [result])
-                    if ips:
-                        text += "\n\nAccès probable : " + ", ".join([f"https://{ip}:9090" for ip in ips])
-                    return text
-                case 34:
-                    return self._doctor_report()
-                case 35:
-                    return self._format_results("Logs système", [system_logs()])
-                case 36:
-                    output = "/tmp/systek_logs.txt"
-                    result = export_system_logs(output)
-                    text = self._format_results("Export logs", [result])
-                    if result.ok:
-                        text += f"\n\nFichier créé : {output}"
-                    return text
-                case 38:
-                    return "[b]Update Systek[/b]\n\nCommande : [cyan]sudo systek --update[/cyan]"
-                case 39:
-                    return "[b]Désinstaller Systek[/b]\n\nCommande : [cyan]sudo /opt/systek/uninstall.sh[/cyan]"
-                case 40:
-                    return f"[b]Version[/b]\n\nSystek {__version__}"
-        except PermissionError as exc:
-            return f"[yellow]{exc}[/yellow]"
-        except NotImplementedError as exc:
-            return f"[yellow]{exc}[/yellow]"
-        except Exception as exc:
-            return f"[red]Erreur[/red]\n\n{exc}"
-        return "Action non implémentée."
-
-    def _need_args(self, args: list[str], minimum: int, example: str) -> None:
-        if len(args) < minimum:
-            raise ValueError(f"Argument manquant. {example}")
-
-    def _format_results(self, title: str, results: list) -> str:
-        blocks = [f"[b]{title}[/b]"]
-        for idx, result in enumerate(results, start=1):
-            state = "[green]OK[/green]" if result.ok else "[red]ERREUR[/red]"
-            body = result.stdout or result.stderr or "Aucune sortie"
-            blocks.append(f"\n{state} • commande {idx}\n{body}")
-        return "\n".join(blocks)
-
-    def _doctor_report(self) -> str:
-        ips = ", ".join(get_local_ips()) or "N/A"
-        return (
-            "[b]Diagnostic[/b]\n\n"
-            f"Hostname : {get_hostname()}\n"
-            f"OS       : {get_os_name()}\n"
-            f"Kernel   : {get_kernel()}\n"
+    def update_host_panel(self) -> None:
+        ips = ", ".join(network.ip_addresses()) or "N/A"
+        mode = "COMPLET" if self.root_mode else "LIMITÉ"
+        text = (
+            f"[b]Hôte[/b]\n"
+            f"Hostname : {system.get_hostname()}\n"
+            f"OS       : {system.get_os_name()}\n"
+            f"Kernel   : {system.get_kernel()}\n"
+            f"IPs      : {ips}\n"
             f"Pkg mgr  : {self.pkg_manager}\n"
-            f"IP       : {ips}\n"
-            f"Mode     : {'sudo complet' if self.root_mode else 'limité sans sudo'}\n"
-            f"CPU      : {cpu_percent():.1f}%\n"
-            f"RAM      : {ram_percent():.1f}%\n"
-            f"DISK     : {disk_percent('/'):.1f}%\n"
+            f"Mode     : {mode}\n"
+            f"Version  : {__version__}\n\n"
+            f"Sans sudo, certaines actions restent disponibles en consultation seulement."
         )
+        self.query_one("#host-panel", Static).update(text)
+
+    def update_detail_panel(self, action: ActionDefinition) -> None:
+        req = "Oui" if action.requires_root else "Non"
+        hint = action.args_hint or "Aucun argument"
+        text = (
+            f"[b]Action {action.number} — {action.label}[/b]\n"
+            f"Catégorie : {action.category}\n"
+            f"Sudo      : {req}\n"
+            f"Arguments : {hint}\n\n"
+            f"{action.description}\n"
+        )
+        self.query_one("#detail-panel", Static).update(text)
+
+    def execute_command_bar(self, raw: str) -> None:
+        parts = raw.strip().split()
+        if not parts:
+            return
+        try:
+            number = int(parts[0])
+        except ValueError:
+            self.show_result("Commande invalide. Exemple: 9 nginx")
+            return
+        action = self.action_lookup.get(number)
+        if not action:
+            self.show_result(f"Action inconnue: {number}")
+            return
+        self.run_selected_action(action, parts[1:])
+
+    def run_selected_action(self, action: ActionDefinition, args: List[str]) -> None:
+        if action.requires_root and not self.root_mode:
+            self.show_result("Action limitée sans sudo. Relance avec : sudo systek")
+            return
+        if action.number == 38:
+            self.exit()
+            return
+        result = self.dispatch_action(action, args)
+        self.show_result(result)
+        self.refresh_dashboard()
+        self.update_host_panel()
+
+    def dispatch_action(self, action: ActionDefinition, args: List[str]) -> str:
+        try:
+            n = action.number
+            if n == 1:
+                res1, res2 = system.update_system(self.pkg_manager)
+                return self.format_results("Update système", [res1, res2])
+            if n == 2:
+                return self.format_results("Redémarrage", [system.reboot_system()])
+            if n == 3:
+                return self.format_results("Arrêt", [system.shutdown_system()])
+            if n == 4:
+                return self.need_arg_or_run(args, "package", lambda x: packages.install_package(self.pkg_manager, x), "Installation paquet")
+            if n == 5:
+                return self.need_arg_or_run(args, "package", lambda x: packages.remove_package(self.pkg_manager, x), "Suppression paquet")
+            if n == 6:
+                return self.need_arg_or_run(args, "package", lambda x: packages.hold_package(self.pkg_manager, x), "Hold paquet")
+            if n == 7:
+                return self.need_arg_or_run(args, "package", lambda x: packages.unhold_package(self.pkg_manager, x), "Unhold paquet")
+            if n == 8:
+                return self.need_arg_or_run(args, "package", lambda x: packages.search_package(self.pkg_manager, x), "Recherche paquet")
+            if n == 9:
+                return self.need_arg_or_run(args, "service", services.restart_service, "Restart service")
+            if n == 10:
+                return self.need_arg_or_run(args, "service", services.start_service, "Start service")
+            if n == 11:
+                return self.need_arg_or_run(args, "service", services.stop_service, "Stop service")
+            if n == 12:
+                return self.need_arg_or_run(args, "service", services.enable_service, "Enable service")
+            if n == 13:
+                return self.need_arg_or_run(args, "service", services.disable_service, "Disable service")
+            if n == 14:
+                return self.format_results("Liste services", [services.list_services()])
+            if n == 15:
+                return self.need_arg_or_run(args, "service", services.service_status, "Status service")
+            if n == 16:
+                return self.need_arg_or_run(args, "service", services.service_logs, "Logs service")
+            if n == 17:
+                temp = monitor.cpu_temperature()
+                return (
+                    "Vue ressources\n\n"
+                    f"CPU  : {monitor.cpu_percent():.1f}%\n"
+                    f"RAM  : {monitor.ram_percent():.1f}%\n"
+                    f"DISK : {monitor.disk_percent('/'): .1f}%\n"
+                    f"LOAD : {' / '.join(f'{x:.2f}' for x in monitor.load_average())}\n"
+                    f"UP   : {monitor.uptime_human()}\n"
+                    f"TEMP : {f'{temp:.1f}°C' if temp is not None else 'N/A'}"
+                )
+            if n == 18:
+                return f"Espace disque\n\n{disks.disk_usage_lines()}"
+            if n == 19:
+                return self.format_results("Connexions réseau", [network.network_connections()])
+            if n == 20:
+                return f"IP / Hostname\n\nHostname: {network.hostname()}\nIPs: {', '.join(network.ip_addresses()) or 'N/A'}"
+            if n == 21:
+                return f"RAM\n\nUtilisation mémoire: {monitor.ram_percent():.1f}%"
+            if n == 22:
+                return f"CPU\n\nUtilisation CPU: {monitor.cpu_percent():.1f}%"
+            if n == 23:
+                temp = monitor.cpu_temperature()
+                return f"Température CPU\n\n{f'{temp:.1f}°C' if temp is not None else 'Non disponible'}"
+            if n == 24:
+                if len(args) < 2:
+                    return "Usage: 24 <device> <mountpoint>"
+                return self.format_results("Montage disque", [disks.mount_disk(args[0], args[1])])
+            if n == 25:
+                return self.format_results("Disques", [disks.list_disks()])
+            if n == 26:
+                return f"Interfaces réseau\n\n{network.list_interfaces()}"
+            if n == 27:
+                return self.format_results("Test connectivité", [network.connectivity_test()])
+            if n == 28:
+                return self.format_results("UFW status", [firewall.ufw_status()])
+            if n == 29:
+                return self.format_results("UFW enable", [firewall.enable_ufw()])
+            if n == 30:
+                return self.format_results("UFW disable", [firewall.disable_ufw()])
+            if n == 31:
+                return self.need_arg_or_run(args, "règle", firewall.add_rule, "Ajout règle UFW")
+            if n == 32:
+                return self.need_arg_or_run(args, "numéro", firewall.delete_rule, "Suppression règle UFW")
+            if n == 33:
+                install_result, ips = cockpit.install_cockpit(self.pkg_manager)
+                extra = "\n".join(f"https://{ip}:9090" for ip in ips) if ips else "URL non détectée"
+                return self.format_results("Installation Cockpit", [install_result]) + f"\n\nAccès possible:\n{extra}"
+            if n == 34:
+                return (
+                    "Diagnostic\n\n"
+                    f"OS        : {system.get_os_name()}\n"
+                    f"Kernel    : {system.get_kernel()}\n"
+                    f"Hostname  : {system.get_hostname()}\n"
+                    f"IPs       : {', '.join(network.ip_addresses()) or 'N/A'}\n"
+                    f"Pkg mgr   : {self.pkg_manager}\n"
+                    f"Mode root : {'oui' if self.root_mode else 'non'}"
+                )
+            if n == 35:
+                return self.format_results("Update Systek", [updater.update_systek()])
+            if n == 36:
+                return "Désinstallation\n\nCommande: sudo /opt/systek/uninstall.sh"
+            if n == 37:
+                return f"Version Systek\n\n{__version__}"
+            return "Action non implémentée."
+        except PermissionError as exc:
+            return str(exc)
+        except Exception as exc:
+            return f"Erreur: {exc}"
+
+    def need_arg_or_run(self, args: List[str], arg_name: str, fn, title: str) -> str:
+        if not args:
+            return f"Usage: {title} nécessite {arg_name}"
+        res = fn(" ".join(args))
+        return self.format_results(title, [res])
+
+    def format_results(self, title: str, results) -> str:
+        chunks = [f"[b]{title}[/b]"]
+        for idx, result in enumerate(results, start=1):
+            status = "OK" if result.ok else f"ERREUR ({result.returncode})"
+            output = result.stdout or result.stderr or "Aucune sortie"
+            trimmed = "\n".join(output.splitlines()[:80])
+            chunks.append(f"\n[{idx}] {status}\n{trimmed}")
+        return "\n".join(chunks)
+
+    def show_result(self, text: str) -> None:
+        self.query_one("#result-panel", Static).update(text)

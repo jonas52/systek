@@ -1,18 +1,19 @@
 from dataclasses import dataclass
-from typing import Optional
 
-@dataclass
+
+@dataclass(slots=True)
 class CommandResult:
     ok: bool
     stdout: str
     stderr: str
     returncode: int
 
-@dataclass
-class ActionSpec:
+
+@dataclass(slots=True)
+class ActionDefinition:
     number: int
-    label: str
     category: str
+    label: str
     description: str
     requires_root: bool = False
-    arg_hint: Optional[str] = None
+    args_hint: str = ""

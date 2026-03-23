@@ -1,13 +1,15 @@
+from __future__ import annotations
+
 import socket
 import psutil
 from ..shell import run_command
 
 
-def get_hostname() -> str:
+def hostname() -> str:
     return socket.gethostname()
 
 
-def get_local_ips() -> list[str]:
+def ip_addresses() -> list[str]:
     ips: list[str] = []
     for _, addrs in psutil.net_if_addrs().items():
         for addr in addrs:
@@ -16,13 +18,17 @@ def get_local_ips() -> list[str]:
     return ips
 
 
-def list_interfaces() -> list[str]:
-    return list(psutil.net_if_addrs().keys())
+def list_interfaces() -> str:
+    names = sorted(psutil.net_if_addrs().keys())
+    return "\n".join(names)
 
 
 def network_connections():
-    return run_command(["ss", "-tunap"])
+    res = run_command(["ss", "-tunap"], timeout=60)
+    if res.ok:
+        return res
+    return run_command(["netstat", "-tunap"], timeout=60)
 
 
 def connectivity_test():
-    return run_command(["ping", "-c", "2", "1.1.1.1"])
+    return run_command(["ping", "-c", "2", "1.1.1.1"], timeout=10)

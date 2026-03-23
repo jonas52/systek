@@ -1,114 +1,105 @@
 Screen {
-    background: #0a0f14;
-    color: #d8e1ea;
+    background: #0b0f14;
+    color: #d6dde6;
 }
 
-Header, Footer {
-    background: #101720;
-    color: #d8e1ea;
+Header {
+    background: #111827;
+    color: #c7d2fe;
 }
 
-#screen {
-    layout: vertical;
+Footer {
+    background: #111827;
+    color: #9fb3c8;
 }
 
-#topbar {
-    height: 9;
-}
-
-#workspace {
+#app-root {
     height: 1fr;
-}
-
-.panel {
-    border: round #233446;
-    background: #0f151d;
-    margin: 0 1 1 1;
     padding: 0 1;
 }
 
-.section-title {
-    color: #7cc6ff;
-    text-style: bold;
-    padding: 0 0 1 0;
+#metrics-row {
+    height: 9;
+    margin: 0 0 1 0;
 }
 
-#monitor-panel {
-    width: 2fr;
-}
-
-#host-panel {
+.metric-box {
     width: 1fr;
+    margin: 0 1 0 0;
+    padding: 1 1;
+    background: #101722;
+    border: round #223044;
+    color: #dce6f2;
+}
+
+#main-row {
+    height: 1fr;
+}
+
+#sidebar, #center-pane, #right-pane {
+    height: 1fr;
 }
 
 #sidebar {
     width: 24;
+    margin: 0 1 1 0;
+    padding: 1;
+    background: #101722;
+    border: round #223044;
 }
 
-#action-pane {
-    width: 44;
+#center-pane {
+    width: 40;
+    margin: 0 1 1 0;
+    padding: 1;
+    background: #101722;
+    border: round #223044;
 }
 
-#detail-pane {
+#right-pane {
     width: 1fr;
-    margin-right: 1;
+    margin: 0 0 1 0;
 }
 
-#detail-box {
+.box-panel {
     height: 1fr;
+    margin: 0 0 1 0;
+    padding: 1 2;
+    background: #101722;
+    border: round #223044;
+    color: #d6dde6;
 }
 
-#output-box {
-    height: 1fr;
+.section-title {
+    margin-bottom: 1;
+    text-style: bold;
+    color: #7dd3fc;
 }
 
 #category-list, #action-list {
     height: 1fr;
-    background: #0c1219;
-    border: tall #1a2735;
+    background: transparent;
+    border: none;
 }
 
-#category-list:focus, #action-list:focus, #command-input:focus {
-    border: tall #3b82f6;
+ListView > ListItem {
+    padding: 0 1;
+    color: #d6dde6;
 }
 
-#category-list > .list-view--highlight,
-#action-list > .list-view--highlight {
-    background: #16324d;
-    color: #ffffff;
+ListView > ListItem.--highlight {
+    background: #182332;
+    color: #eaf2ff;
     text-style: bold;
 }
 
-#mode-panel {
-    height: 4;
-    margin-top: 1;
-    border: round #1a2735;
-    padding: 0 1;
-    background: #0c1219;
-}
-
-#action-header {
-    height: 2;
-    color: #9db4c9;
-}
-
-#detail-panel, #output-panel {
-    height: 1fr;
-    overflow-y: auto;
-    padding: 0 1;
-}
-
-#commandbar {
+#command-row {
     height: 3;
-    layout: horizontal;
-    align: left middle;
-}
-
-#command-help {
-    width: 1fr;
-    color: #9db4c9;
+    margin-bottom: 1;
 }
 
 #command-input {
-    width: 50%;
+    background: #101722;
+    border: round #223044;
+    color: #eaf2ff;
 }

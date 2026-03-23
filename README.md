@@ -1,36 +1,48 @@
-# Systek V2.1
+# Systek
 
-Interface TUI d'administration Linux simple, lisible et pensée pour un usage admin système.
+Systek is a Linux system administration TUI with a professional layout inspired by btop for monitoring, while keeping a straightforward operator workflow.
 
-## Installation
+## Highlights
+
+- Professional and simple admin-oriented layout
+- Live CPU / RAM / Disk / Network / Load monitoring
+- Actions grouped by categories
+- Read-only mode without sudo
+- Full administration mode with sudo
+- Install, update and uninstall included
+
+## Install
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/jonas52/systek/main/install.sh | sudo bash
+sudo ./install.sh
 ```
 
-## Utilisation
+## Run
 
 ```bash
 systek
 sudo systek
 ```
 
-Sans sudo, certaines fonctionnalités sont limitées.
+Without sudo, some administrative actions are limited.
 
-## Commandes utiles
+## Keys
 
-```bash
-systek --doctor
-systek --version
-sudo systek --update
-sudo /opt/systek/uninstall.sh
+- `↑` / `↓`: move in actions
+- `tab`: change focus between categories and actions
+- `enter`: run selected action
+- `/`: focus command bar
+- `r`: refresh dashboard
+- `q`: quit
+
+## Commands in the command bar
+
+Examples:
+
+```text
+20
+9 nginx
+4 htop
+24 /dev/sdb1 /mnt/data
+31 22/tcp
 ```
-
-## Utilisation dans la TUI
-
-- Flèches haut/bas : naviguer dans la liste des actions
-- Entrée : exécuter l'action sélectionnée
-- Taper un numéro dans la barre du bas puis Entrée : exécuter directement l'action
-- Pour les actions avec argument : `9 nginx`, `4 htop`, `31 22/tcp`
-- `r` : rafraîchir les stats
-- `q` : quitter
