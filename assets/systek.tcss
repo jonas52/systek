@@ -1,0 +1,45 @@
+Screen {
+    background: #111111;
+    color: #eaeaea;
+}
+
+#top-row {
+    height: 11;
+}
+
+#bottom-row {
+    height: 1fr;
+}
+
+.panel {
+    border: round #3a3a3a;
+    padding: 1 2;
+    margin: 0 1 1 1;
+    background: #181818;
+}
+
+#monitor-panel {
+    width: 2fr;
+}
+
+#host-panel {
+    width: 1fr;
+}
+
+#menu-panel {
+    width: 1fr;
+}
+
+#detail-panel {
+    width: 2fr;
+    overflow: auto;
+}
+
+ListView > ListItem {
+    padding: 0 1;
+}
+
+ListView > ListItem.-highlight {
+    background: #2a2a2a;
+    color: #ffffff;
+}

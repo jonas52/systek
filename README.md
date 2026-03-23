@@ -1,91 +1,47 @@
-<h1 align="center">Systek 🛠️</h1>
+# Systek V2
 
-<p align="center">
-  <img src="https://github.com/user-attachments/assets/723bcab7-30a6-47a6-873b-cc3ffc44d226" alt="Script Preview" width="300">
-</p>
+Systek est une TUI d'administration système Linux pensée pour les admins système.
 
-<p align="center"><strong>A versatile Python-based CLI tool to manage your Linux server with ease.</strong></p>
+## Points clés
 
-<p align="center"><em>⚠️ Please note: This project is currently under development and is only supported on Ubuntu at this time.</em></p>
+- interface simple et lisible
+- monitoring en haut façon dashboard sobre
+- mode limité sans sudo
+- mode complet avec sudo
+- installateur global
+- désinstalleur
+- commande d'update
 
----
-
-## ✨ Features
-
-* ✅ Clean, interactive terminal interface
-* 🔁 Manage system services (start, stop, restart, enable, disable)
-* 📦 Install and remove packages
-* 📊 Monitor system resources (CPU, RAM, disk, network)
-* 🌡️ Display CPU temperature (requires `lm-sensors`)
-* 🔒 Manage UFW firewall settings
-* 🖥️ Install the Cockpit web admin interface
-* 🔄 Self-update the script using `--update`
-* 🧹 Uninstall Systek and clean up with `--remove`
-
----
-
-## 📋 Requirements
-
-Before installing Systek, ensure the following:
-
-* **Python 3.x** is installed
-* **Root or sudo privileges** are available
-* *(Optional)* For CPU temperature support:
-
-  ```bash
-  sudo apt-get install lm-sensors
-  ```
-
----
-
-## 🚀 Installation
-
-### 📦 One-liner (install & run):
+## Installation
 
 ```bash
-bash <(curl -s https://raw.githubusercontent.com/jonas52/systek/main/install_service.sh) && systek
+curl -fsSL https://raw.githubusercontent.com/jonas52/systek/main/install.sh | sudo bash
 ```
 
-### 📦 One-liner (install only):
-
-```bash
-bash <(curl -s https://raw.githubusercontent.com/jonas52/systek/main/install_service.sh)
-```
-
-This script will:
-
-* Clone the repository into `/opt/systek`
-* Set up a systemd service
-* Make the `systek` command globally available
-
----
-
-## 🧑‍💻 Usage
-
-### ▶️ Launch the interactive menu:
+## Utilisation
 
 ```bash
 systek
 ```
 
-### 🔄 Update Systek:
+Mode complet :
 
 ```bash
-systek --update
+sudo systek
 ```
 
-### ❌ Uninstall Systek:
+## Mise à jour
 
 ```bash
-systek --remove
+sudo systek --update
 ```
 
----
+## Désinstallation
 
-## 📝 License
+```bash
+sudo /opt/systek/uninstall.sh
+```
 
-This project is licensed under the [GNU General Public License v2.0](LICENSE).
+## Note importante
 
----
-
-<p align="center"><strong>Made with ❤️ by jonas52</strong></p>
+Sans sudo, certaines fonctionnalités d'administration sont limitées.
