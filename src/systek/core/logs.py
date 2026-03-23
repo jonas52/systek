@@ -9,6 +9,5 @@ def system_logs(lines: int = 100):
 def export_system_logs(output_file: str):
     result = run_command(["journalctl", "-n", "500", "--no-pager"])
     if result.ok:
-        path = Path(output_file)
-        path.write_text(result.stdout, encoding="utf-8")
+        Path(output_file).write_text(result.stdout, encoding="utf-8")
     return result

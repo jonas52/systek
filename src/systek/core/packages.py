@@ -3,12 +3,11 @@ from ..shell import run_command
 
 
 def detect_package_manager() -> str:
-    candidates = ["apt", "dnf", "yum", "pacman"]
-    for cmd in candidates:
+    for cmd in ["apt", "dnf", "yum", "pacman"]:
         result = run_command(["which", cmd])
         if result.ok:
             return cmd
-    raise RuntimeError("Aucun gestionnaire de paquets supporté détecté.")
+    return "unknown"
 
 
 def install_package(pkg_manager: str, package: str):
@@ -46,12 +45,12 @@ def search_package(pkg_manager: str, package: str):
 def hold_package(pkg_manager: str, package: str):
     require_root()
     if pkg_manager != "apt":
-        raise NotImplementedError("hold package actuellement supporté via apt seulement.")
+        raise NotImplementedError("Hold package disponible uniquement via apt actuellement.")
     return run_command(["apt-mark", "hold", package])
 
 
 def unhold_package(pkg_manager: str, package: str):
     require_root()
     if pkg_manager != "apt":
-        raise NotImplementedError("unhold package actuellement supporté via apt seulement.")
+        raise NotImplementedError("Unhold package disponible uniquement via apt actuellement.")
     return run_command(["apt-mark", "unhold", package])

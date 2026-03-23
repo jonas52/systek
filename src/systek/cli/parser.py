@@ -1,6 +1,5 @@
 import argparse
 
-
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="systek", description="Linux system administration TUI")
     parser.add_argument("--update", action="store_true", help="Met à jour Systek")

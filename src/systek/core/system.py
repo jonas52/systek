@@ -27,21 +27,21 @@ def get_os_name() -> str:
 
 def update_system(pkg_manager: str):
     require_root()
-    commands = {
+    refresh = {
         "apt": ["apt", "update"],
         "dnf": ["dnf", "makecache"],
         "yum": ["yum", "makecache"],
         "pacman": ["pacman", "-Sy"],
     }
-    upgrade_commands = {
+    upgrade = {
         "apt": ["apt", "upgrade", "-y"],
         "dnf": ["dnf", "upgrade", "-y"],
         "yum": ["yum", "update", "-y"],
         "pacman": ["pacman", "-Su", "--noconfirm"],
     }
-    result1 = run_command(commands[pkg_manager])
-    result2 = run_command(upgrade_commands[pkg_manager])
-    return result1, result2
+    r1 = run_command(refresh[pkg_manager])
+    r2 = run_command(upgrade[pkg_manager])
+    return r1, r2
 
 
 def reboot_system():

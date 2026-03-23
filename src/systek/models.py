@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-
+from typing import Optional
 
 @dataclass
 class CommandResult:
@@ -8,11 +8,11 @@ class CommandResult:
     stderr: str
     returncode: int
 
-
 @dataclass
-class ActionDefinition:
-    key: str
+class ActionSpec:
+    number: int
     label: str
     category: str
-    requires_root: bool
     description: str
+    requires_root: bool = False
+    arg_hint: Optional[str] = None

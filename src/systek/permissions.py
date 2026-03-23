@@ -1,9 +1,7 @@
 import os
 
-
 def is_root() -> bool:
     return os.geteuid() == 0
-
 
 def require_root() -> None:
     if not is_root():

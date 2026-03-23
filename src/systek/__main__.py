@@ -1,11 +1,11 @@
-from .cli.parser import build_parser
-from .version import __version__
-from .core.updater import update_systek
 from .app import SystekApp
+from .cli.parser import build_parser
+from .core.updater import update_systek
 from .permissions import is_root
+from .version import __version__
 
 
-def main():
+def main() -> None:
     parser = build_parser()
     args = parser.parse_args()
 
@@ -15,9 +15,9 @@ def main():
 
     if args.update:
         pull, pip_sync, editable = update_systek()
-        print(pull.stdout or "Update git OK")
-        print(pip_sync.stdout or "Dependencies OK")
-        print(editable.stdout or "Editable install OK")
+        print(pull.stdout or pull.stderr or "Git OK")
+        print(pip_sync.stdout or pip_sync.stderr or "Deps OK")
+        print(editable.stdout or editable.stderr or "Editable OK")
         return
 
     if args.uninstall:
@@ -30,8 +30,7 @@ def main():
         print("Commande recommandée : sudo systek")
         return
 
-    app = SystekApp(readonly=args.readonly)
-    app.run()
+    SystekApp(readonly=args.readonly).run()
 
 
 if __name__ == "__main__":

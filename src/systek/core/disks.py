@@ -13,5 +13,12 @@ def mount_disk(device: str, mountpoint: str):
     return run_command(["mount", device, mountpoint])
 
 
-def disk_usage():
-    return psutil.disk_partitions(all=False)
+def disk_usage_report() -> str:
+    lines = []
+    for part in psutil.disk_partitions(all=False):
+        try:
+            usage = psutil.disk_usage(part.mountpoint)
+            lines.append(f"{part.mountpoint:<20} {usage.percent:>5.1f}%  {usage.used // (1024**3)}G/{usage.total // (1024**3)}G")
+        except PermissionError:
+            continue
+    return "\n".join(lines) or "Aucune information disque disponible."

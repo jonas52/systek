@@ -1,16 +1,6 @@
-# Systek V2
+# Systek V2.1
 
-Systek est une TUI d'administration système Linux pensée pour les admins système.
-
-## Points clés
-
-- interface simple et lisible
-- monitoring en haut façon dashboard sobre
-- mode limité sans sudo
-- mode complet avec sudo
-- installateur global
-- désinstalleur
-- commande d'update
+Interface TUI d'administration Linux simple, lisible et pensée pour un usage admin système.
 
 ## Installation
 
@@ -22,26 +12,25 @@ curl -fsSL https://raw.githubusercontent.com/jonas52/systek/main/install.sh | su
 
 ```bash
 systek
-```
-
-Mode complet :
-
-```bash
 sudo systek
 ```
 
-## Mise à jour
+Sans sudo, certaines fonctionnalités sont limitées.
+
+## Commandes utiles
 
 ```bash
+systek --doctor
+systek --version
 sudo systek --update
-```
-
-## Désinstallation
-
-```bash
 sudo /opt/systek/uninstall.sh
 ```
 
-## Note importante
+## Utilisation dans la TUI
 
-Sans sudo, certaines fonctionnalités d'administration sont limitées.
+- Flèches haut/bas : naviguer dans la liste des actions
+- Entrée : exécuter l'action sélectionnée
+- Taper un numéro dans la barre du bas puis Entrée : exécuter directement l'action
+- Pour les actions avec argument : `9 nginx`, `4 htop`, `31 22/tcp`
+- `r` : rafraîchir les stats
+- `q` : quitter

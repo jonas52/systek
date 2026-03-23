@@ -3,7 +3,7 @@ from ..shell import run_command
 
 
 def list_services():
-    return run_command(["systemctl", "list-units", "--type=service", "--no-pager"])
+    return run_command(["systemctl", "list-units", "--type=service", "--no-pager", "--all"])
 
 
 def service_status(service: str):
