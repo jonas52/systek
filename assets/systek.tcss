@@ -1,105 +1,94 @@
 Screen {
-    background: #0b0f14;
-    color: #d6dde6;
+    background: #0b1220;
+    color: #e5e7eb;
 }
 
-Header {
-    background: #111827;
-    color: #c7d2fe;
-}
-
-Footer {
-    background: #111827;
-    color: #9fb3c8;
-}
-
-#app-root {
-    height: 1fr;
+#root {
+    layout: vertical;
     padding: 0 1;
 }
 
-#metrics-row {
-    height: 9;
-    margin: 0 0 1 0;
+#top {
+    height: 11;
 }
 
-.metric-box {
-    width: 1fr;
-    margin: 0 1 0 0;
-    padding: 1 1;
-    background: #101722;
-    border: round #223044;
-    color: #dce6f2;
-}
-
-#main-row {
+#middle {
     height: 1fr;
 }
 
-#sidebar, #center-pane, #right-pane {
-    height: 1fr;
-}
-
-#sidebar {
-    width: 24;
-    margin: 0 1 1 0;
-    padding: 1;
-    background: #101722;
-    border: round #223044;
-}
-
-#center-pane {
-    width: 40;
-    margin: 0 1 1 0;
-    padding: 1;
-    background: #101722;
-    border: round #223044;
-}
-
-#right-pane {
-    width: 1fr;
+#command-bar {
+    height: 3;
     margin: 0 0 1 0;
 }
 
-.box-panel {
-    height: 1fr;
-    margin: 0 0 1 0;
+#metrics, #host, #action-list, #details, #output, #statusline, #command {
+    border: round #22324d;
+    background: #101826;
+    color: #e5e7eb;
+}
+
+#metrics, #host {
     padding: 1 2;
-    background: #101722;
-    border: round #223044;
-    color: #d6dde6;
+    margin: 0 1 1 1;
 }
 
-.section-title {
-    margin-bottom: 1;
-    text-style: bold;
-    color: #7dd3fc;
+#metrics {
+    width: 2fr;
 }
 
-#category-list, #action-list {
+#host {
+    width: 1fr;
+}
+
+#action-list {
+    width: 34;
+    margin: 0 1 1 1;
+}
+
+#right-stack {
+    width: 1fr;
     height: 1fr;
-    background: transparent;
-    border: none;
+}
+
+#details, #output {
+    margin: 0 1 1 1;
+    padding: 1 2;
+}
+
+#details {
+    height: 12;
+}
+
+#output {
+    height: 1fr;
+    overflow: auto;
+}
+
+#statusline {
+    width: 1fr;
+    padding: 1 2;
+    margin: 0 1 0 1;
+}
+
+#command {
+    width: 45%;
+    margin: 0 1 0 0;
 }
 
 ListView > ListItem {
     padding: 0 1;
-    color: #d6dde6;
 }
 
 ListView > ListItem.--highlight {
-    background: #182332;
-    color: #eaf2ff;
+    background: #1d4ed8 25%;
+    color: #ffffff;
+}
+
+.category-item {
+    background: #0f172a;
+    color: #93c5fd;
+}
+
+.category-label {
     text-style: bold;
-}
-
-#command-row {
-    height: 3;
-    margin-bottom: 1;
-}
-
-#command-input {
-    background: #101722;
-    border: round #223044;
-    color: #eaf2ff;
 }

@@ -12,31 +12,32 @@ if [[ "${EUID}" -ne 0 ]]; then
 fi
 
 detect_pkg_manager() {
-  if command -v apt >/dev/null 2>&1; then echo apt; return; fi
-  if command -v dnf >/dev/null 2>&1; then echo dnf; return; fi
-  if command -v yum >/dev/null 2>&1; then echo yum; return; fi
-  if command -v pacman >/dev/null 2>&1; then echo pacman; return; fi
-  echo unsupported
+  if command -v apt >/dev/null 2>&1; then echo "apt"; return; fi
+  if command -v dnf >/dev/null 2>&1; then echo "dnf"; return; fi
+  if command -v yum >/dev/null 2>&1; then echo "yum"; return; fi
+  if command -v pacman >/dev/null 2>&1; then echo "pacman"; return; fi
+  echo "unsupported"
 }
 
 install_deps() {
-  case "$1" in
+  local pkg="$1"
+  case "$pkg" in
     apt)
       apt update
-      apt install -y python3 python3-venv python3-pip
+      apt install -y python3 python3-venv python3-pip git curl
       ;;
     dnf)
-      dnf install -y python3 python3-pip
+      dnf install -y python3 python3-pip git curl
       python3 -m ensurepip --upgrade || true
       ;;
     yum)
-      yum install -y python3 python3-pip
+      yum install -y python3 python3-pip git curl
       ;;
     pacman)
-      pacman -Sy --noconfirm python python-pip
+      pacman -Sy --noconfirm python python-pip git curl
       ;;
     *)
-      echo "Gestionnaire non supporté"
+      echo "Gestionnaire de paquets non supporté."
       exit 1
       ;;
   esac
@@ -46,22 +47,20 @@ PKG_MANAGER="$(detect_pkg_manager)"
 install_deps "$PKG_MANAGER"
 
 mkdir -p "$INSTALL_DIR"
-cp -r . "$INSTALL_DIR/"
-
+cp -r . "$INSTALL_DIR"
 python3 -m venv "$VENV_DIR"
 "$VENV_DIR/bin/pip" install --upgrade pip
 "$VENV_DIR/bin/pip" install -r "$INSTALL_DIR/requirements.txt"
-"$VENV_DIR/bin/pip" install "$INSTALL_DIR"
 
-cat > "$BIN_LINK" <<SCRIPT
+cat > "$BIN_LINK" <<LAUNCHER
 #!/usr/bin/env bash
 exec "$VENV_DIR/bin/python" -m systek "\$@"
-SCRIPT
+LAUNCHER
 chmod +x "$BIN_LINK"
-
 mkdir -p /etc/systek /var/log/systek /var/lib/systek
 
+echo
 echo "Installation terminée."
-echo "Lancement normal       : systek"
-echo "Lancement admin complet: sudo systek"
-echo "Sans sudo, certaines fonctionnalités seront limitées."
+echo "Lancement utilisateur : systek"
+echo "Lancement admin complet : sudo systek"
+echo "Sans sudo, certaines fonctionnalités sont limitées."
