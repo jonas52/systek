@@ -1,6 +1,6 @@
-# Systek (English CLI version)
+# Systek
 
-This package keeps the original menu-driven Systek script, translates the interface to English, and adds a cleaner self-update command.
+Systek is a Linux administration helper script with a simple menu-driven interface.
 
 ## Install
 
@@ -14,16 +14,21 @@ sudo bash install.sh
 sudo systek
 ```
 
-## Self-update
+## Update Systek
 
 ```bash
 sudo systek --update
 ```
 
-Self-update works when Systek is installed from a Git repository.
-
-## Remove
+## Remove Systek
 
 ```bash
 sudo systek --remove
 ```
+
+## Notes
+
+- The script keeps the original CLI style.
+- Shell output is hidden by default for administrative actions.
+- Use verbose mode from the menu or `--verbose` to see full command output.
+- The self-update command expects the installed copy to be a Git checkout.

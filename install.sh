@@ -1,38 +1,33 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-SERVICE_NAME="systek"
+APP_NAME="systek"
 INSTALL_DIR="/opt/systek"
-SYMLINK_PATH="/usr/local/bin/systek"
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+BIN_LINK="/usr/local/bin/systek"
+SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 
-if [[ "$EUID" -ne 0 ]]; then
-  echo "╰─╼ This script must be run as superuser (root)."
+if [[ $EUID -ne 0 ]]; then
+  echo "This installer must be run as root."
   exit 1
 fi
 
-if command -v apt-get >/dev/null 2>&1; then
-  apt-get update
-  apt-get install -y git python3 python3-pip
-elif command -v dnf >/dev/null 2>&1; then
-  dnf install -y git python3 python3-pip
-elif command -v yum >/dev/null 2>&1; then
-  yum install -y git python3 python3-pip
-elif command -v pacman >/dev/null 2>&1; then
-  pacman -Sy --noconfirm git python python-pip
-else
-  echo "╰─╼ Unsupported package manager. Install Python and Git manually."
-  exit 1
-fi
+echo "[1/4] System dependencies..."
+apt update >/dev/null
+apt install -y git python3 python3-pip iproute2 net-tools lm-sensors >/dev/null
 
+echo "[2/4] Installing application..."
+rm -rf "$INSTALL_DIR"
 mkdir -p "$INSTALL_DIR"
-rsync -a --delete \
-  --exclude '.git' \
-  --exclude '__pycache__' \
-  --exclude '*.pyc' \
-  "$SCRIPT_DIR/" "$INSTALL_DIR/"
-
+cp "$SCRIPT_DIR/systek.py" "$INSTALL_DIR/systek.py"
+cp "$SCRIPT_DIR/README.md" "$INSTALL_DIR/README.md"
 chmod +x "$INSTALL_DIR/systek.py"
-ln -sf "$INSTALL_DIR/systek.py" "$SYMLINK_PATH"
 
-echo "╰─╼ Installation complete. Use 'systek', 'systek --update' or 'systek --remove'."
+echo "[3/4] Creating launcher..."
+cat > "$BIN_LINK" <<EOF
+#!/usr/bin/env bash
+exec python3 "$INSTALL_DIR/systek.py" "\$@"
+EOF
+chmod +x "$BIN_LINK"
+
+echo "[4/4] Done"
+echo "Run: sudo systek"
