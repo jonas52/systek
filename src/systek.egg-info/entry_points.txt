@@ -1,2 +1,0 @@
-[console_scripts]
-systek = systek.__main__:main
