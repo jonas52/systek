@@ -1,117 +1,78 @@
 Screen {
-    background: #0b1220;
-    color: #d7dde8;
+    background: #0c1014;
+    color: #d9e1e8;
 }
 
-Header {
-    background: #111827;
-    color: #d7dde8;
-}
-
-Footer {
-    background: #111827;
-    color: #9fb0c8;
-}
-
-#app-shell {
-    padding: 1 1;
-}
-
-#monitor-grid {
-    height: 11;
-    grid-size: 6;
-    grid-gutter: 1 1;
-    grid-columns: 1fr 1fr 1fr 1fr 1fr 1fr;
-    margin-bottom: 1;
-}
-
-MetricCard {
-    border: round #243042;
-    background: #111827;
-    padding: 1 2;
-    content-align: left top;
-}
-
-#top-info {
-    height: 10;
-    margin-bottom: 1;
-}
-
-#host-panel, #mode-panel {
-    width: 1fr;
-    border: round #243042;
-    background: #111827;
-    padding: 1 2;
-    margin-right: 1;
-}
-
-#workspace {
+#screen {
     height: 1fr;
 }
 
-.column {
-    border: round #243042;
-    background: #111827;
+#monitor-row {
+    height: 9;
+    margin: 0 1;
+}
+
+#main-row {
+    height: 1fr;
+    margin: 0 1 1 1;
+}
+
+#nav-col, #detail-col {
+    border: round #32414f;
+    background: #12181f;
     padding: 1;
+}
+
+#nav-col {
+    width: 34;
     margin-right: 1;
 }
 
-.column.narrow {
-    width: 26;
-}
-
-.column.medium {
-    width: 38;
-}
-
-.column.wide {
+#detail-col {
     width: 1fr;
 }
 
-.panel-title {
-    color: #8db2ff;
-    text-style: bold;
+#action-list {
+    border: tall #24313d;
+    background: #0f151b;
+    height: 1fr;
+}
+
+#action-list > .list-view--highlight {
+    background: #16324a;
+    color: #eaf4ff;
+}
+
+#host-panel, #detail-panel, #result-panel {
+    border: round #24313d;
+    background: #0f151b;
+    padding: 1 2;
     margin-bottom: 1;
 }
 
-#category-list, #action-list {
-    height: 1fr;
-    border: none;
-    background: transparent;
-}
-
-ListView > ListItem {
-    padding: 0 1;
-    color: #d7dde8;
-}
-
-ListView > ListItem.--highlight {
-    background: #1d4ed8 20%;
-    color: #ffffff;
-    text-style: bold;
+#host-panel {
+    height: 7;
 }
 
 #detail-panel {
-    height: 12;
-    border: round #1f2937;
-    background: #0f172a;
-    padding: 1 2;
-    margin-bottom: 1;
+    height: 6;
 }
 
-#result-log {
+#result-panel {
     height: 1fr;
-    border: round #1f2937;
-    background: #0f172a;
 }
 
-#command-bar {
+#command-row {
+    margin: 0 1 1 1;
     height: 3;
-    margin-top: 1;
 }
 
 #command-input {
-    border: round #243042;
-    background: #111827;
-    color: #d7dde8;
+    border: round #32414f;
+    background: #12181f;
+}
+
+.panel-title {
+    color: #86b7ff;
+    margin-bottom: 1;
 }

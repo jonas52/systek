@@ -1,4 +1,5 @@
-from .app import main
+from .app import SystekApp
 
-if __name__ == "__main__":
-    main()
+def main() -> None:
+    app = SystekApp()
+    app.run()

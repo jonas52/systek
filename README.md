@@ -1,18 +1,24 @@
-# Systek
+# Systek Pro V7
 
-Systek is a Linux system administration TUI.
+Interface TUI Linux orientée administration système.
 
-## Install
+## Installation
 
 ```bash
 sudo ./install.sh
 ```
 
-## Usage
+Ou depuis le dossier parent :
+
+```bash
+sudo bash systek/install.sh
+```
+
+## Utilisation
 
 ```bash
 systek
 sudo systek
 ```
 
-Without sudo, Systek starts in limited mode.
+Sans sudo, Systek reste utilisable en mode limité.
