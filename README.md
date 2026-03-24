@@ -30,7 +30,7 @@
 ## Preview
 
 <div align="center">
-  <img src="./assets/screenshot.png" alt="Systek preview" width="900">
+  <img src="screenshot.png" alt="Systek preview" width="900">
 </div>
 
 ---
