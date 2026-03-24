@@ -1,29 +1,29 @@
-# Systek Pro V8
+# Systek (English CLI version)
 
-Interface TUI Linux pensée pour l'administration système :
-- monitoring en haut inspiré de btop
-- navigation simple par catégories
-- panneau détail + résultat
-- mode limité sans sudo
-- mode complet avec sudo
+This package keeps the original menu-driven Systek script, translates the interface to English, and adds a cleaner self-update command.
 
-## Installation
+## Install
 
 ```bash
-sudo ./install.sh
+sudo bash install.sh
 ```
 
-## Utilisation
+## Run
 
 ```bash
-systek
 sudo systek
 ```
 
-## Commandes utiles
+## Self-update
 
-- `r` : rafraîchir
-- `Entrée` : lancer l'action sélectionnée
-- `/` : focus sur la barre de commande
-- `1`, `2`, `3`... dans la barre de commande : lancer une action
-- `q` : quitter
+```bash
+sudo systek --update
+```
+
+Self-update works when Systek is installed from a Git repository.
+
+## Remove
+
+```bash
+sudo systek --remove
+```
