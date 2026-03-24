@@ -1,6 +1,6 @@
 # Systek
 
-Systek is a Linux administration helper script with a simple menu-driven interface.
+A simple Linux administration CLI menu.
 
 ## Install
 
@@ -14,21 +14,20 @@ sudo bash install.sh
 sudo systek
 ```
 
-## Update Systek
+## Update from GitHub
 
 ```bash
 sudo systek --update
 ```
 
-## Remove Systek
+Repository used for updates:
+
+```text
+https://github.com/jonas52/systek/
+```
+
+## Remove
 
 ```bash
 sudo systek --remove
 ```
-
-## Notes
-
-- The script keeps the original CLI style.
-- Shell output is hidden by default for administrative actions.
-- Use verbose mode from the menu or `--verbose` to see full command output.
-- The self-update command expects the installed copy to be a Git checkout.
