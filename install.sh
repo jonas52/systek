@@ -1,7 +1,6 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-APP_NAME="systek"
 INSTALL_DIR="/opt/systek"
 BIN_LINK="/usr/local/bin/systek"
 VENV_DIR="$INSTALL_DIR/.venv"
@@ -12,78 +11,39 @@ if [[ "${EUID}" -ne 0 ]]; then
   exit 1
 fi
 
-find_project_root() {
-  local candidate="$SCRIPT_DIR"
-  if [[ -f "$candidate/requirements.txt" && -f "$candidate/pyproject.toml" ]]; then
-    printf '%s\n' "$candidate"
-    return 0
-  fi
-
-  local nested
-  nested="$(find "$candidate" -mindepth 2 -maxdepth 2 -type f -name requirements.txt | head -n 1 | xargs -r dirname || true)"
-  if [[ -n "$nested" && -f "$nested/pyproject.toml" ]]; then
-    printf '%s\n' "$nested"
-    return 0
-  fi
-
-  echo "Impossible de localiser requirements.txt et pyproject.toml à côté du script." >&2
-  exit 1
-}
-
-PROJECT_ROOT="$(find_project_root)"
-
-detect_pkg_manager() {
-  if command -v apt >/dev/null 2>&1; then echo "apt"; return; fi
-  if command -v dnf >/dev/null 2>&1; then echo "dnf"; return; fi
-  if command -v yum >/dev/null 2>&1; then echo "yum"; return; fi
-  if command -v pacman >/dev/null 2>&1; then echo "pacman"; return; fi
-  echo "unsupported"
-}
-
-PKG_MANAGER="$(detect_pkg_manager)"
-if [[ "$PKG_MANAGER" == "unsupported" ]]; then
-  echo "Gestionnaire de paquets non supporté."
+if [[ ! -f "$SCRIPT_DIR/requirements.txt" || ! -f "$SCRIPT_DIR/pyproject.toml" ]]; then
+  echo "Projet incomplet : requirements.txt ou pyproject.toml introuvable dans $SCRIPT_DIR" >&2
   exit 1
 fi
 
-install_deps() {
-  case "$PKG_MANAGER" in
-    apt)
-      apt update
-      apt install -y python3 python3-venv python3-pip
-      ;;
-    dnf)
-      dnf install -y python3 python3-pip
-      python3 -m ensurepip --upgrade || true
-      ;;
-    yum)
-      yum install -y python3 python3-pip
-      ;;
-    pacman)
-      pacman -Sy --noconfirm python python-pip
-      ;;
-  esac
-}
-
-echo "[1/4] Dépendances système..."
-install_deps
+if command -v apt >/dev/null 2>&1; then
+  echo "[1/4] Dépendances système..."
+  apt update
+  apt install -y python3 python3-venv python3-pip
+elif command -v dnf >/dev/null 2>&1; then
+  echo "[1/4] Dépendances système..."
+  dnf install -y python3 python3-pip
+elif command -v yum >/dev/null 2>&1; then
+  echo "[1/4] Dépendances système..."
+  yum install -y python3 python3-pip
+elif command -v pacman >/dev/null 2>&1; then
+  echo "[1/4] Dépendances système..."
+  pacman -Sy --noconfirm python python-pip
+else
+  echo "Gestionnaire de paquets non supporté." >&2
+  exit 1
+fi
 
 echo "[2/4] Copie de l'application..."
 rm -rf "$INSTALL_DIR"
 mkdir -p "$INSTALL_DIR"
-cp -a "$PROJECT_ROOT"/. "$INSTALL_DIR"/
+cp -a "$SCRIPT_DIR"/. "$INSTALL_DIR"/
 find "$INSTALL_DIR" -type d \( -name '__pycache__' -o -name '.pytest_cache' -o -name '.mypy_cache' \) -prune -exec rm -rf {} +
 rm -rf "$INSTALL_DIR/.venv"
 
 echo "[3/4] Virtualenv Python..."
 python3 -m venv "$VENV_DIR"
 "$VENV_DIR/bin/pip" install --upgrade pip
-if [[ ! -f "$INSTALL_DIR/requirements.txt" ]]; then
-  echo "Erreur: requirements.txt introuvable après copie dans $INSTALL_DIR" >&2
-  echo "Contenu actuel de $INSTALL_DIR :" >&2
-  ls -la "$INSTALL_DIR" >&2
-  exit 1
-fi
 "$VENV_DIR/bin/pip" install -r "$INSTALL_DIR/requirements.txt"
 "$VENV_DIR/bin/pip" install "$INSTALL_DIR"
 
@@ -97,8 +57,7 @@ chmod +x "$BIN_LINK"
 mkdir -p /etc/systek /var/log/systek /var/lib/systek
 
 echo
-
 echo "Installation terminée."
-echo "Lancer: systek"
-echo "Mode complet: sudo systek"
+echo "Lancer : systek"
+echo "Mode complet : sudo systek"
 echo "Sans sudo certaines fonctionnalités sont limitées."
